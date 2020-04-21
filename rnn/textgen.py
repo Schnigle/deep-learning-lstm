@@ -24,9 +24,23 @@ from IPython.display import HTML
 input_file_name = "data/speech.txt"
 n_hidden = 100
 seq_length = 25
-syn_length = 200
+syn_length = 500
 n_epochs = 100
 learning_rate = 0.1
+
+print("Parameters: ")
+print("\tHidden nodes M: ", n_hidden)
+print("\tSequence length: ", seq_length)
+print("\tLearning rate: ", learning_rate)
+print("\tNumber of epochs: ", n_epochs)
+
+# Set random seed for reproducibility
+manualSeed = 999
+# manualSeed = random.randint(1, 10000)
+print("\tRandom seed: ", manualSeed)
+random.seed(manualSeed)
+torch.manual_seed(manualSeed)
+print()
 
 '''
     Prepare input data
@@ -34,7 +48,7 @@ learning_rate = 0.1
 # Raw text data
 book_data = open(input_file_name, encoding="utf-8").read().strip()
 # List of unique characters
-book_chars = list(set(book_data))
+book_chars = sorted(list(set(book_data)))
 # K: Number of classes (unique characters)
 K = len(book_chars)
 
@@ -44,14 +58,6 @@ ind_to_char = dict()
 for i in range(K):
     char_to_ind[book_chars[i]] = i
     ind_to_char[i] = book_chars[i]
-
-# Set random seed for reproducibility
-# (doesn't seem to work very well)
-manualSeed = 999
-# manualSeed = random.randint(1, 10000)
-print("Seed: ", manualSeed)
-random.seed(manualSeed)
-torch.manual_seed(manualSeed)
 
 '''
     Create network and loss criterion
@@ -137,6 +143,17 @@ def train(input_seq_tensor, target_seq_tensor, hidden):
 '''
     Train the network
 '''
+
+print("Training progress: ")
+
+smooth_loss = 0
+smooth_interpolation_rate = 0.02
+smooth_loss_vec = []
+loss_vec = []
+# Current inner loop iteration (total)
+current_iteration = 0
+expected_number_of_iterations = (len(book_data) / seq_length) * n_epochs    # (approximative)
+
 # One epoch = one full run through the training data (such as goblet_book.txt)
 for epoch in range(n_epochs):
     i=0
@@ -148,11 +165,44 @@ for epoch in range(n_epochs):
         X = stringToTensor(X_chars)
         Y = stringToTensorNLLLabel(Y_chars)
         output, loss, hidden = train(X, Y, hidden)
-        print(loss)
+        if current_iteration == 0:
+            smooth_loss = loss
+            first_sample = False
+        else:
+            smooth_loss = smooth_loss * (1 - smooth_interpolation_rate) + loss * smooth_interpolation_rate
+        
+        percent_done = round((current_iteration / expected_number_of_iterations) * 100)
+        if current_iteration % 10 == 0:
+            print("\t" + str(percent_done) + " % done. Smooth loss: " +  str("{:.2f}").format(smooth_loss), end="\r")
         i += seq_length
+        current_iteration += 1
+        loss_vec.append(loss)
+        smooth_loss_vec.append(smooth_loss)
+print("\t100% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss))
 
 '''
     Synthesize some text
 '''
 text_inds = synthesize(syn_length)
-print("Synthesized text:\n", indsToString(text_inds))
+print()
+print("Synthesized text:")
+print("\t" + indsToString(text_inds))
+print()
+
+'''
+    Plot loss
+    
+    TODO: Instead of plotting "unsmooth" loss, do multiple runs 
+    and plot average loss and standard deviation between runs.
+'''
+plt.plot(loss_vec, 'lightblue')
+plt.plot(smooth_loss_vec, 'blue')
+plt.legend(['Iteration loss', 'Smooth loss'])
+title = "Baseline RNN loss evolution (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ")"
+plt.title(title)
+plt.xlabel("Training iteration")
+plt.ylabel("Training loss")
+plt.xlim(0, len(smooth_loss_vec))
+# Note: y-max is quite arbitrary and depends on the loss metric and data
+plt.ylim(0, 150)
+plt.show()
