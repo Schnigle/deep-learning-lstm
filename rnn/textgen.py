@@ -26,7 +26,7 @@ n_hidden = 100
 seq_length = 25
 syn_length = 200
 n_epochs = 100
-learning_rate = 0.01
+learning_rate = 0.1
 
 '''
     Prepare input data
@@ -115,33 +115,33 @@ def synthesize(n):
     return word
 
 # Train the network on a single character sequence
-def train(input_line_tensor, target_line_tensor, hidden):
-    target_line_tensor.unsqueeze_(-1)
+def train(input_seq_tensor, target_seq_tensor, hidden):
+    target_seq_tensor.unsqueeze_(-1)
     # hidden = net.initHidden()
     net.zero_grad()
     optimizer.zero_grad()
 
     loss = 0
 
-    for i in range(input_line_tensor.size(0)):
-        output, hidden = net(input_line_tensor[i], hidden)
-        l = criterion(output, target_line_tensor[i])
+    # Loop through each character in the sequence
+    for i in range(input_seq_tensor.size(0)):
+        output, hidden = net(input_seq_tensor[i], hidden)
+        l = criterion(output, target_seq_tensor[i])
         loss += l
 
     loss.backward()
     optimizer.step()
-
-    # for p in net.parameters():
-    #     p.data.add_(-learning_rate, p.grad.data)
 
     return output, loss.item(), hidden.detach()
 
 '''
     Train the network
 '''
+# One epoch = one full run through the training data (such as goblet_book.txt)
 for epoch in range(n_epochs):
     i=0
     hidden = net.initHidden()
+    # One iteration = one sequence of text data (such as 25 characters)
     while i < (len(book_data) - seq_length):
         X_chars = book_data[i:i+seq_length]
         Y_chars = book_data[i+1:i+seq_length+1]
