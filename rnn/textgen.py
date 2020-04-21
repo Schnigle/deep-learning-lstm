@@ -25,7 +25,7 @@ input_file_name = "data/speech.txt"
 n_hidden = 100
 seq_length = 25
 syn_length = 200
-n_epochs = 50
+n_epochs = 100
 learning_rate = 0.01
 
 '''
