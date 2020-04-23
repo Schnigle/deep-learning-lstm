@@ -28,7 +28,7 @@ seq_length = 25
 syn_length = 500
 n_epochs = 200
 learning_rate = 0.1
-use_cuda = True
+use_cuda = False
 '''
     Note: Using the GPU is currently only beneficial for very large network
     sizes since the batches are processed sequentially. For smaller networks
