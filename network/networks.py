@@ -14,7 +14,7 @@ class RNN(nn.Module):
 
     def forward(self, input, hidden):
         combined = torch.cat((input, hidden), 1)
-        hidden = self.tanh(self.i2h(combined))
+        hidden = self.i2h(combined)
         # tanh helps for stability when using higher learning rates
         hidden = self.tanh(hidden)
         output = self.h2o(hidden)
