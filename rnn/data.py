@@ -47,4 +47,3 @@ class CharacterData():
 		for i in inds:
 			str += self.ind_to_char[i]
 		return str
-

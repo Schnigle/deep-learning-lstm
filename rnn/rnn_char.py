@@ -40,10 +40,23 @@ use_cuda = False
     sizes since the batches are processed sequentially. For smaller networks
     GPU is much slower than CPU.
 '''
-
 if use_cuda and not torch.cuda.is_available():
     print("No CUDA support found. Switching to GPU mode. ")
     use_cuda = False
+if use_cuda:
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
+'''
+    Create network and loss criterion
+'''
+data = data.CharacterData(input_file_name, device)
+net = networks.RNN(data.K, n_hidden, data.K)
+if use_cuda:
+    net = net.cuda()
+criterion = nn.NLLLoss()
+optimizer = optim.Adagrad(net.parameters(), lr=learning_rate)
 
 print("Input file: ")
 print("\t" + input_file_name)
@@ -56,21 +69,6 @@ print("\tNumber of epochs: ", n_epochs)
 print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
 print()
-
-if use_cuda:
-    device = torch.device("cuda")
-else:
-    device = torch.device("cpu")
-data = data.CharacterData(input_file_name, device)
-
-'''
-    Create network and loss criterion
-'''
-net = networks.RNN(data.K, n_hidden, data.K)
-if use_cuda:
-    net = net.cuda()
-criterion = nn.NLLLoss()
-optimizer = optim.Adagrad(net.parameters(), lr=learning_rate)
 
 loss_vec, smooth_loss_vec = training_char.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
 
