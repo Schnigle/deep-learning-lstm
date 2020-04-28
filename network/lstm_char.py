@@ -18,9 +18,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
+import lstm_char_net
+import lstm_char_train
 import data
-import rnn_char_net
-import rnn_char_train
 import utility
 
 '''
@@ -30,14 +30,14 @@ input_file_name = "data/speech.txt"
 n_hidden = 50
 seq_length = 25
 syn_length = 500
-n_epochs = 200
+n_epochs = 50
 learning_rate = 0.1
 seed = random.randint(1, 10000)
 # seed = 999
 use_cuda = False
 '''
     Note: Using the GPU is currently only beneficial for very large network
-    sizes since the batches are processed sequentially. For smaller net_rnn
+    sizes since the batches are processed sequentially. For smaller net_lstm
     GPU is much slower than CPU.
 '''
 if use_cuda and not torch.cuda.is_available():
@@ -52,7 +52,7 @@ else:
     Create network and loss criterion
 '''
 data = data.CharacterData(input_file_name, device)
-net = rnn_char_net.RNN(data.K, n_hidden, data.K)
+net = lstm_char_net.RNN_LSTM(data.K, n_hidden, data.K)
 if use_cuda:
     net = net.cuda()
 criterion = nn.NLLLoss()
@@ -70,12 +70,12 @@ print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
 print()
 
-loss_vec, smooth_loss_vec = rnn_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
+loss_vec, smooth_loss_vec = lstm_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
 
 '''
     Synthesize some text
 '''
-text_inds = rnn_char_train.synthesize_characters(data, net, syn_length, device)
+text_inds = lstm_char_train.synthesize_characters(data, net, syn_length, device)
 print()
 print("Synthesized text:")
 print("\t" + data.indsToString(text_inds))

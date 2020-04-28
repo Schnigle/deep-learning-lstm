@@ -1,7 +1,3 @@
-'''
-	Module for training methods that can (hopefully) be shared by character-level RNN and LSTM networks.
-'''
-
 from __future__ import print_function
 #%matplotlib inline
 import argparse
@@ -19,30 +15,28 @@ import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import networks
+import rnn_char_net
 import time
 import utility
 from IPython.display import HTML
 
 # Train the network on a single character sequence
 def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden):
-    target_seq_tensor.unsqueeze_(-1)
-    # hidden = net.initHidden()
-    net.zero_grad()
-    optimizer.zero_grad()
+	target_seq_tensor.unsqueeze_(-1)
+	net.zero_grad()
+	optimizer.zero_grad()
 
-    loss = 0
+	loss = 0
+	# Loop through each character in the sequence
+	for i in range(input_seq_tensor.size(0)):
+		output, hidden = net(input_seq_tensor[i], hidden)
+		l = criterion(output, target_seq_tensor[i])
+		loss += l
 
-    # Loop through each character in the sequence
-    for i in range(input_seq_tensor.size(0)):
-        output, hidden = net(input_seq_tensor[i], hidden)
-        l = criterion(output, target_seq_tensor[i])
-        loss += l
+	loss.backward()
+	optimizer.step()
 
-    loss.backward()
-    optimizer.step()
-
-    return output, loss.item(), hidden.detach()
+	return output, loss.item(), hidden.detach()
 
 def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
 	print("Training progress: ")
@@ -86,3 +80,24 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 	print("Total training time: " + str(round(total_time)) + " seconds")
 
 	return loss_vec, smooth_loss_vec
+
+# Synthesize a text sequence of length n
+def synthesize_characters(data, net, n, device):
+	hidden = net.initHidden()
+	net.zero_grad()
+	prev_char = data.toOneHot(data.char_to_ind['.'])
+	word = []
+	for i in range(n):
+		'''
+			Select the next character based on the probability distribution.
+			Note: we don't always select the most likely character, as that would
+			likely result in repeating phrases such as "the the the the the..."
+		'''
+		output, hidden = net(prev_char, hidden)
+		# Convert output to probability weights. 
+		# exp is needed to invert log softmax.
+		output = torch.exp(output)
+		char_index = utility.randomSampleFromWeights(output[0])
+		word.append(char_index)
+		prev_char = data.toOneHot(char_index)
+	return word
