@@ -55,7 +55,7 @@ data = data.CharacterData(input_file_name, device)
 net = lstm_char_net.RNN_LSTM(data.K, n_hidden, data.K)
 if use_cuda:
     net = net.cuda()
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adagrad(net.parameters(), lr=learning_rate)
 
 print("Input file: ")

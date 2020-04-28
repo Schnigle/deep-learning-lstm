@@ -18,6 +18,7 @@ import matplotlib.animation as animation
 import rnn_char_net
 import time
 import utility
+import torch.nn.functional as F
 from IPython.display import HTML
 
 # Train the network on a single character sequence
@@ -95,8 +96,7 @@ def synthesize_characters(data, net, n, device):
 		'''
 		output, hidden = net(prev_char, hidden)
 		# Convert output to probability weights. 
-		# exp is needed to invert log softmax.
-		output = torch.exp(output)
+		output = F.softmax(output, dim=1)
 		char_index = utility.randomSampleFromWeights(output[0])
 		word.append(char_index)
 		prev_char = data.toOneHot(char_index)
