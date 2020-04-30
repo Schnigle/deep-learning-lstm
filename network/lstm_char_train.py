@@ -66,7 +66,6 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 			Y_chars = data.text_data[i+1:i+seq_length+1]
 			X = data.stringToTensor(X_chars)
 			Y = data.stringToTensorNLLLabel(Y_chars)
-			# Y = data.stringToTensor(Y_chars)
 			output, loss, hidden = train_batch(net, criterion, optimizer, X, Y, hidden)
 			if current_iteration == 0:
 				smooth_loss = loss

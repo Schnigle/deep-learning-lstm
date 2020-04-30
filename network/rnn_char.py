@@ -27,10 +27,11 @@ import utility
     Network and synthesis parameters
 '''
 input_file_name = "data/speech.txt"
+save_file_name = "rnn_char_save.pt"
 n_hidden = 50
 seq_length = 25
 syn_length = 500
-n_epochs = 200
+n_epochs = 20
 learning_rate = 0.1
 seed = random.randint(1, 10000)
 # seed = 999
@@ -51,6 +52,8 @@ else:
 '''
     Create network and loss criterion
 '''
+torch.manual_seed(seed)
+random.seed(seed)
 data = data.CharacterData(input_file_name, device)
 net = rnn_char_net.RNN(data.K, n_hidden, data.K)
 if use_cuda:
@@ -73,6 +76,28 @@ print()
 loss_vec, smooth_loss_vec = rnn_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
 
 '''
+    Save network and training data
+'''
+save_folder = 'saves'
+if not os.path.exists(save_folder):
+    os.makedirs(save_folder)
+module_id = "rnn_char"
+config_text = "Baseline RNN (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ")"
+torch.save({
+    'model_state_dict' : net.state_dict(),
+    'optimizer_state_dict' : optimizer.state_dict(),
+    'loss_vec' : loss_vec,
+    'smooth_loss_vec' : smooth_loss_vec,
+    'n_hidden' : n_hidden,
+    'K' : data.K,
+    'seq_length' : seq_length,
+    'learning_rate' : learning_rate,
+    'input_file_name' : input_file_name,
+    'config_text' : config_text,
+    'module_id' : module_id,
+},  save_folder + "/" + save_file_name)
+
+'''
     Synthesize some text
 '''
 text_inds = rnn_char_train.synthesize_characters(data, net, syn_length, device)
@@ -80,21 +105,3 @@ print()
 print("Synthesized text:")
 print("\t" + data.indsToString(text_inds))
 print()
-
-'''
-    Plot loss
-    
-    TODO: Instead of plotting "unsmooth" loss, do multiple runs 
-    and plot average loss and standard deviation between runs.
-'''
-plt.plot(loss_vec, 'lightblue')
-plt.plot(smooth_loss_vec, 'blue')
-plt.legend(['Iteration loss', 'Smooth loss'])
-title = "Baseline RNN loss evolution (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ")"
-plt.title(title)
-plt.xlabel("Training iteration")
-plt.ylabel("Training loss")
-plt.xlim(0, len(smooth_loss_vec))
-# Note: y-max is quite arbitrary and depends on the loss metric and data
-plt.ylim(0, 150)
-plt.show()
