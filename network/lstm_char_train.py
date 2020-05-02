@@ -59,7 +59,7 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 	# One epoch = one full run through the training data (such as goblet_book.txt)
 	for epoch in range(n_epochs):
 		i=0
-		hidden = net.initHidden()
+		hidden = net.initHidden(device)
 		# One iteration = one sequence of text data (such as 25 characters)
 		while i < (len(data.text_data) - seq_length):
 			X_chars = data.text_data[i:i+seq_length]
@@ -89,7 +89,7 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 
 # Synthesize a text sequence of length n
 def synthesize_characters(data, net, n, device):
-	hidden = net.initHidden()
+	hidden = net.initHidden(device)
 	net.zero_grad()
 	prev_char = data.toOneHot(data.char_to_ind['.'])
 	word = []

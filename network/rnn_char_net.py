@@ -20,5 +20,5 @@ class RNN(nn.Module):
         output = self.h2o(hidden)
         return output, hidden
 
-    def initHidden(self):
-        return torch.zeros(1, self.hidden_size)
+    def initHidden(self, device):
+        return torch.zeros(1, self.hidden_size).to(device)
