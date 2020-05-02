@@ -22,7 +22,8 @@ import torch.nn.functional as F
 from IPython.display import HTML
 
 # Train the network on a single character sequence
-def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden):
+def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden_tuple):
+	(hidden, cell) = hidden_tuple
 	# NOTE: Pytorch LSTM expects 3D tensors with dimensions SEQUENCE_LENGTH x BATCH_SIZE x N_CLASSES.
 	# Currently we are training one sequence sample at the time to make it easier to compare to the baseline RNN,
 	# giving each input tensor (representing a char) the dimensions 1 x 1 x N_CLASSES.
@@ -35,14 +36,14 @@ def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, 
 
 	# Loop through each character in the sequence
 	for i in range(input_seq_tensor.size(0)):
-		output, hidden = net(input_seq_tensor[i], hidden)
+		output, (hidden, cell) = net(input_seq_tensor[i], (hidden, cell))
 		l = criterion(output[0], target_seq_tensor[i])
 		loss += l
 
 	loss.backward()
 	optimizer.step()
 
-	return output, loss.item(), (hidden[0].detach(), hidden[1].detach())
+	return output, loss.item(), (hidden.detach(), cell.detach())
 
 def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
 	print("Training progress: ")

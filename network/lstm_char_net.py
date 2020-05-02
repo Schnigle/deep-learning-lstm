@@ -11,10 +11,11 @@ class RNN_LSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size)
         self.lstm2o = nn.Linear(hidden_size, output_size)
 
-    def forward(self, input, hidden):
-        output, hidden = self.lstm(input, hidden)
+    def forward(self, input, hidden_cell):
+        (hidden, cell) = hidden_cell
+        output, (hidden, cell) = self.lstm(input, (hidden, cell))
         output = self.lstm2o(output)
-        return output, hidden
+        return output, (hidden, cell)
 
     def initHidden(self, device):
         return (torch.zeros(1, 1, self.hidden_size).to(device), torch.zeros(1, 1, self.hidden_size).to(device))
