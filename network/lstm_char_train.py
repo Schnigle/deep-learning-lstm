@@ -25,20 +25,17 @@ from IPython.display import HTML
 def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden_tuple):
 	(hidden, cell) = hidden_tuple
 	# NOTE: Pytorch LSTM expects 3D tensors with dimensions SEQUENCE_LENGTH x BATCH_SIZE x N_CLASSES.
-	# Currently we are training one sequence sample at the time to make it easier to compare to the baseline RNN,
-	# giving each input tensor (representing a char) the dimensions 1 x 1 x N_CLASSES.
-	input_seq_tensor.unsqueeze_(1)
 	target_seq_tensor.unsqueeze_(-1)
 	net.zero_grad()
 	optimizer.zero_grad()
 
-	loss = 0
-
-	# Loop through each character in the sequence
-	for i in range(input_seq_tensor.size(0)):
-		output, (hidden, cell) = net(input_seq_tensor[i], (hidden, cell))
-		l = criterion(output[0], target_seq_tensor[i])
-		loss += l
+	output, (hidden, cell) = net(input_seq_tensor, (hidden, cell))
+	# For some reason we need to switch some dimensions
+	target_seq_tensor.transpose_(0, 1)
+	output.transpose_(0, 1)
+	output.transpose_(1, 2)
+	# TODO: Multiply with sequence length to better match sequential approach?
+	loss = criterion(output, target_seq_tensor)
 
 	loss.backward()
 	optimizer.step()

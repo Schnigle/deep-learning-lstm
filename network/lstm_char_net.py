@@ -18,4 +18,5 @@ class RNN_LSTM(nn.Module):
         return output, (hidden, cell)
 
     def initHidden(self, device):
+        # n_layers x batch_size x hidden_size
         return (torch.zeros(1, 1, self.hidden_size).to(device), torch.zeros(1, 1, self.hidden_size).to(device))

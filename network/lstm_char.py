@@ -31,11 +31,11 @@ save_file_name = "lstm_char_save.pt"
 n_hidden = 50
 seq_length = 25
 syn_length = 500
-n_epochs = 5
+n_epochs = 100
 learning_rate = 0.1
 seed = random.randint(1, 10000)
 # seed = 999
-use_cuda = False
+use_cuda = True
 '''
     Note: Using the GPU is currently only beneficial for very large network
     sizes since the batches are processed sequentially. For smaller net_lstm
