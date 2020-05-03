@@ -23,12 +23,10 @@ from IPython.display import HTML
 
 # Train the network on a single character sequence
 def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden_tuple):
+	# NOTE: Pytorch LSTM expects input to be 3D tensors with dimensions SEQUENCE_LENGTH x BATCH_SIZE x N_CLASSES.
 	(hidden, cell) = hidden_tuple
-	# NOTE: Pytorch LSTM expects 3D tensors with dimensions SEQUENCE_LENGTH x BATCH_SIZE x N_CLASSES.
-	target_seq_tensor.unsqueeze_(-1)
 	net.zero_grad()
 	optimizer.zero_grad()
-
 	output, (hidden, cell) = net(input_seq_tensor, (hidden, cell))
 	# For some reason we need to switch some dimensions
 	target_seq_tensor.transpose_(0, 1)
@@ -42,7 +40,7 @@ def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, 
 
 	return output, loss.item(), (hidden.detach(), cell.detach())
 
-def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
+def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device):
 	print("Training progress: ")
 	smooth_loss = 0
 	smooth_interpolation_rate = 0.02
@@ -50,31 +48,37 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 	loss_vec = []
 	# Current inner loop iteration (total)
 	current_iteration = 0
-	expected_number_of_iterations = (len(data.text_data) / seq_length) * n_epochs    # (approximative)
+	expected_number_of_iterations = (len(data.text_data) / (seq_length * batch_size)) * n_epochs    # (approximative)
 
 	start_time = time.time()
 
 	# One epoch = one full run through the training data (such as goblet_book.txt)
 	for epoch in range(n_epochs):
 		i=0
-		hidden = net.initHidden(device)
+		hidden = net.initHidden(batch_size, device)
 		# One iteration = one sequence of text data (such as 25 characters)
-		while i < (len(data.text_data) - seq_length):
-			X_chars = data.text_data[i:i+seq_length]
-			Y_chars = data.text_data[i+1:i+seq_length+1]
-			X = data.stringToTensor(X_chars)
-			Y = data.stringToTensorNLLLabel(Y_chars)
-			output, loss, hidden = train_batch(net, criterion, optimizer, X, Y, hidden)
+		while i < (len(data.text_data) - seq_length * batch_size):
+			# prepare data batches
+			X_batch = torch.zeros(seq_length, batch_size, data.K).to(device)
+			Y_batch = torch.zeros(seq_length, batch_size, dtype=torch.long).to(device)
+			for j in range(batch_size):
+				X_chars = data.text_data[i:i+seq_length]
+				Y_chars = data.text_data[i+1:i+seq_length+1]
+				X = data.stringToTensor(X_chars)
+				Y = data.stringToTensorNLLLabel(Y_chars)
+				X_batch[:, j, :] = X.squeeze(1)
+				Y_batch[:, j] = Y
+				i += seq_length
+			output, loss, hidden = train_batch(net, criterion, optimizer, X_batch, Y_batch, hidden)
 			if current_iteration == 0:
 				smooth_loss = loss
 			else:
 				smooth_loss = smooth_loss * (1 - smooth_interpolation_rate) + loss * smooth_interpolation_rate
 			
-			percent_done = round((current_iteration / expected_number_of_iterations) * 100)
-			if current_iteration % 10 == 0:
-				print("\t" + str(percent_done) + " % done. Smooth loss: " +  str("{:.2f}").format(smooth_loss), end="\r")
-			i += seq_length
 			current_iteration += 1
+			percent_done = round((current_iteration / expected_number_of_iterations) * 100)
+			if current_iteration % 5 == 0:
+				print("\t" + str(percent_done) + " % done. Smooth loss: " +  str("{:.2f}").format(smooth_loss), end="\r")
 			loss_vec.append(loss)
 			smooth_loss_vec.append(smooth_loss)
 
@@ -87,7 +91,7 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 
 # Synthesize a text sequence of length n
 def synthesize_characters(data, net, n, device):
-	hidden = net.initHidden(device)
+	hidden = net.initHidden(1, device)
 	net.zero_grad()
 	prev_char = data.toOneHot(data.char_to_ind['.'])
 	word = []

@@ -17,6 +17,6 @@ class RNN_LSTM(nn.Module):
         output = self.lstm2o(output)
         return output, (hidden, cell)
 
-    def initHidden(self, device):
+    def initHidden(self, batch_size, device):
         # n_layers x batch_size x hidden_size
-        return (torch.zeros(1, 1, self.hidden_size).to(device), torch.zeros(1, 1, self.hidden_size).to(device))
+        return (torch.zeros(1, batch_size, self.hidden_size).to(device), torch.zeros(1, batch_size, self.hidden_size).to(device))

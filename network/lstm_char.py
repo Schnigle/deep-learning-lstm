@@ -33,6 +33,7 @@ seq_length = 25
 syn_length = 500
 n_epochs = 100
 learning_rate = 0.1
+batch_size = 5
 seed = random.randint(1, 10000)
 # seed = 999
 use_cuda = True
@@ -69,11 +70,12 @@ print("\tHidden nodes M: ", n_hidden)
 print("\tSequence length: ", seq_length)
 print("\tLearning rate: ", learning_rate)
 print("\tNumber of epochs: ", n_epochs)
+print("\tBatch size: ", batch_size)
 print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
 print()
 
-loss_vec, smooth_loss_vec = lstm_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
+loss_vec, smooth_loss_vec = lstm_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)
 
 '''
     Save network and training data
@@ -82,13 +84,14 @@ save_folder = 'saves'
 if not os.path.exists(save_folder):
     os.makedirs(save_folder)
 module_id = "lstm_char"
-config_text = "LSTM (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ")"
+config_text = "LSTM (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ", batch_size=" + str(batch_size) + ")"
 torch.save({
     'model_state_dict' : net.state_dict(),
     'optimizer_state_dict' : optimizer.state_dict(),
     'loss_vec' : loss_vec,
     'smooth_loss_vec' : smooth_loss_vec,
     'n_hidden' : n_hidden,
+    'batch_size' : batch_size,
     'K' : data.K,
     'seq_length' : seq_length,
     'learning_rate' : learning_rate,

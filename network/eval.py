@@ -22,7 +22,7 @@ import data
 import utility
 import sys
 
-syn_length = 200
+syn_length = 500
 seed = random.randint(1, 10000)
 # seed = 999
 
