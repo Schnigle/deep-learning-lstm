@@ -29,6 +29,7 @@ import utility
 input_file_name = "data/speech.txt"
 save_file_name = "lstm_char_save.pt"
 n_hidden = 50
+n_layers = 2
 seq_length = 25
 syn_length = 500
 n_epochs = 100
@@ -56,7 +57,7 @@ else:
 torch.manual_seed(seed)
 random.seed(seed)
 data = data.CharacterData(input_file_name, device)
-net = lstm_char_net.RNN_LSTM(data.K, n_hidden, data.K)
+net = lstm_char_net.RNN_LSTM( data.K, n_hidden, data.K, n_layers)
 if use_cuda:
     net = net.cuda()
 criterion = nn.CrossEntropyLoss()
@@ -67,6 +68,7 @@ print("\t" + input_file_name)
 print()
 print("Parameters: ")
 print("\tHidden nodes M: ", n_hidden)
+print("\tLSTM layers: ", n_layers)
 print("\tSequence length: ", seq_length)
 print("\tLearning rate: ", learning_rate)
 print("\tNumber of epochs: ", n_epochs)
@@ -84,13 +86,14 @@ save_folder = 'saves'
 if not os.path.exists(save_folder):
     os.makedirs(save_folder)
 module_id = "lstm_char"
-config_text = "LSTM (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ", batch_size=" + str(batch_size) + ")"
+config_text = "LSTM (M=" + str(n_hidden) + "n_layers=" + str(n_layers) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ", batch_size=" + str(batch_size) + ")"
 torch.save({
     'model_state_dict' : net.state_dict(),
     'optimizer_state_dict' : optimizer.state_dict(),
     'loss_vec' : loss_vec,
     'smooth_loss_vec' : smooth_loss_vec,
     'n_hidden' : n_hidden,
+    'n_layers' : n_layers,
     'batch_size' : batch_size,
     'K' : data.K,
     'seq_length' : seq_length,

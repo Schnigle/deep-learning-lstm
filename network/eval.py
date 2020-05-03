@@ -41,7 +41,7 @@ random.seed(seed)
 checkpoint = torch.load(file_path)
 module_id = checkpoint['module_id']
 if module_id == 'lstm_char':
-	net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
+	net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'])
 	synth = lstm_char_train.synthesize_characters
 elif module_id == 'rnn_char':
 	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])

@@ -3,12 +3,13 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 class RNN_LSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, hidden_size, output_size, n_layers):
         super(RNN_LSTM, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-        self.lstm = nn.LSTM(input_size, hidden_size)
+        self.n_layers = n_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, n_layers)
         self.lstm2o = nn.Linear(hidden_size, output_size)
 
     def forward(self, input, hidden_cell):
@@ -19,4 +20,4 @@ class RNN_LSTM(nn.Module):
 
     def initHidden(self, batch_size, device):
         # n_layers x batch_size x hidden_size
-        return (torch.zeros(1, batch_size, self.hidden_size).to(device), torch.zeros(1, batch_size, self.hidden_size).to(device))
+        return (torch.zeros(self.n_layers, batch_size, self.hidden_size).to(device), torch.zeros(self.n_layers, batch_size, self.hidden_size).to(device))
