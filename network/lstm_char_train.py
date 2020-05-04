@@ -19,7 +19,6 @@ import lstm_char_net
 import time
 import utility
 import torch.nn.functional as F
-from IPython.display import HTML
 
 # Train the network on a single character sequence
 def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden_tuple):
