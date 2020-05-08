@@ -70,8 +70,8 @@ for i in range(len(losses[0])):
 #Create plot
 xloss = np.arange(len(mean_loss))
 xsloss = np.arange(len(mean_s_loss))
-plt.errorbar(xloss, mean_loss, yerr=std_loss, color='lightblue')
-plt.errorbar(xsloss, mean_s_loss, yerr=std_s_loss, color='blue')
+plt.errorbar(xloss, mean_loss, alpha=0.2, yerr=std_loss, color='red', ecolor='gray')
+plt.errorbar(xsloss, mean_s_loss, alpha=0.2, yerr=std_s_loss, color='blue', ecolor='lightblue')
 plt.legend(['Iteration loss', 'Smooth loss'])
 title = "Loss evolution of losses"
 plt.title(title)
