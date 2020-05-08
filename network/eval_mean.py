@@ -39,8 +39,6 @@ for i in range(1,len(args),1):
 num_runs = len(args)-1
 losses = []
 s_losses = []
-labels = []
-
 checkpoint = torch.load(file_paths[0])
 min_length_losses = len(checkpoint['loss_vec'])
 min_length_s_losses = len(checkpoint['smooth_loss_vec'])
@@ -52,22 +50,30 @@ for i in range(num_runs):
         min_length = checkpoint['smooth_loss_vec']
 for i in range(num_runs):
     checkpoint = torch.load(file_paths[i])
-    labels.append(checkpoint['config_text'])
     losses.append(checkpoint['loss_vec'][0:min_length_losses])
     s_losses.append(checkpoint['smooth_loss_vec'][0:min_length_s_losses])
 
 losses = np.array(losses)
 s_losses = np.array(s_losses)
-plot_labels = []
+
+mean_loss = []
+std_loss = []
+mean_s_loss = []
+std_s_loss = []
+
+for i in range(len(losses[0])):
+    mean_loss.append(np.mean(losses[:,i]))
+    mean_s_loss.append(np.mean(s_losses[:,i]))
+    std_loss.append(np.std(losses[:,i]))
+    std_s_loss.append(np.std(s_losses[:,i]))
 
 #Create plot
-for i in range(num_runs):
-    plot_labels.append("Loss for: " + labels[i])
-    plot_labels.append("Smooth loss for: " + labels[i])
-    plt.plot(losses[i])
-    plt.plot(s_losses[i])
-plt.legend(plot_labels, prop={'size':7})
-title = "Loss evolution of multiple training runs."
+xloss = np.arange(len(mean_loss))
+xsloss = np.arange(len(mean_s_loss))
+plt.errorbar(xloss, mean_loss, alpha=0.2, yerr=std_loss, color='red', ecolor='gray')
+plt.errorbar(xsloss, mean_s_loss, alpha=0.2, yerr=std_s_loss, color='blue', ecolor='lightblue')
+plt.legend(['Iteration loss', 'Smooth loss'])
+title = "Mean loss evolution of multiple training runs."
 plt.title(title)
 plt.xlabel("Training iteration")
 plt.ylabel("Training loss")
@@ -76,5 +82,5 @@ plt.ylabel("Training loss")
 #plt.ylim(0, 150)
 if not os.path.exists('graphs'):
     os.makedirs('graphs')
-plt.savefig('graphs/multi_plot.png')
+plt.savefig('graphs/mean_plot.png')
 plt.show()
