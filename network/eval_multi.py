@@ -39,11 +39,19 @@ for i in range(1,len(args),1):
 num_runs = len(args)-1
 losses = []
 s_losses = []
-#OBS problem all needs to have same length!
+checkpoint = torch.load(file_paths[0])
+min_length_losses = len(checkpoint['loss_vec'])
+min_length_s_losses = len(checkpoint['smooth_loss_vec'])
 for i in range(num_runs):
     checkpoint = torch.load(file_paths[i])
-    losses.append(checkpoint['loss_vec'])
-    s_losses.append(checkpoint['smooth_loss_vec'])
+    if len(checkpoint['loss_vec']) < min_length_losses:
+        min_length = checkpoint['loss_vec']
+    if len(checkpoint['smooth_loss_vec']) < min_length_s_losses:
+        min_length = checkpoint['loss_vec']
+for i in range(num_runs):
+    checkpoint = torch.load(file_paths[i])
+    losses.append(checkpoint['loss_vec'][0:min_length_losses])
+    s_losses.append(checkpoint['smooth_loss_vec'][0:min_length_s_losses])
 
 losses = np.array(losses)
 s_losses = np.array(s_losses)
@@ -60,9 +68,10 @@ for i in range(len(losses[0])):
     std_s_loss.append(np.std(s_losses[:,i]))
 
 #Create plot
-x = np.arange(len(mean_loss))
-plt.errorbar(x, mean_loss, yerr=std_loss, color='lightblue')
-plt.errorbar(x, mean_s_loss, yerr=std_s_loss, color='blue')
+xloss = np.arange(len(mean_loss))
+xsloss = np.arange(len(mean_s_loss))
+plt.errorbar(xloss, mean_loss, yerr=std_loss, color='lightblue')
+plt.errorbar(xsloss, mean_s_loss, yerr=std_s_loss, color='blue')
 plt.legend(['Iteration loss', 'Smooth loss'])
 title = "Loss evolution of losses"
 plt.title(title)
