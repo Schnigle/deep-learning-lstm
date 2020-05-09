@@ -21,7 +21,7 @@ import utility
 import torch.nn.functional as F
 
 # Train the network on a single character sequence
-def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden):
+def train_batch(net, optimizer, input_seq_tensor, target_seq_tensor, hidden):
 	net.zero_grad()
 	optimizer.zero_grad()
 	# print(input_seq_tensor.shape)
@@ -46,7 +46,7 @@ def cross_entropy(pred, soft_targets):
     logsoftmax = nn.LogSoftmax(dim=1)
     return torch.sum(- soft_targets * logsoftmax(pred))
 
-def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
+def train_net(net, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
 	print("Training progress: ")
 	smooth_loss = 0
 	smooth_interpolation_rate = 0.02
@@ -66,7 +66,7 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 		while i < (len(data.text_data) - seq_length):
 			X = data.vec_data[i:i+seq_length, :, :]
 			Y = data.vec_data[i+1:i+seq_length+1, :, :].squeeze(1)
-			output, loss, hidden = train_batch(net, criterion, optimizer, X, Y, hidden)
+			output, loss, hidden = train_batch(net, optimizer, X, Y, hidden)
 			if current_iteration == 0:
 				smooth_loss = loss
 			else:

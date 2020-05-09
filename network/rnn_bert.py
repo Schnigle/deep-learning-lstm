@@ -21,7 +21,6 @@ import time
 import data
 import rnn_bert_net
 import rnn_bert_train
-from cross_entropy_one_hot import cross_entropy
 import utility
 
 '''
@@ -56,7 +55,6 @@ else:
 torch.manual_seed(seed)
 random.seed(seed)
 data = data.VecData(input_file_name, device)
-criterion = cross_entropy
 net = rnn_bert_net.RNN(data.K, n_hidden, data.K)
 if use_cuda:
     net = net.cuda()
@@ -74,7 +72,7 @@ print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
 print()
 
-loss_vec, smooth_loss_vec = rnn_bert_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
+loss_vec, smooth_loss_vec = rnn_bert_train.train_net(net, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
 
 '''
     Save network and training data
