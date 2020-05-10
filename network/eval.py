@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
 import rnn_char_net
+import rnn_bert_net
 import rnn_char_train
+import rnn_bert_train
 import lstm_char_net
 import lstm_char_train
 import data
@@ -46,18 +48,28 @@ if module_id == 'lstm_char':
 elif module_id == 'rnn_char':
 	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 	synth = rnn_char_train.synthesize_characters
+elif module_id == 'rnn_bert':
+	net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
+	synth = rnn_bert_train.synthesize_words
 net.load_state_dict(checkpoint['model_state_dict'])
 loss_vec = checkpoint['loss_vec']
 smooth_loss_vec = checkpoint['smooth_loss_vec']
-data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
+if module_id == 'rnn_bert':
+	data = data.VecData(checkpoint['input_file_name'], torch.device('cpu'))
+else:
+	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
 
 '''
     Synthesize some text
 '''
-text_inds = synth(data, net, syn_length, torch.device('cpu'))
+if module_id == 'rnn_bert':
+	text = rnn_bert_train.synthesize_words(data, net, syn_length, torch.device('cpu'))
+else:
+	text_inds = synth(data, net, syn_length, torch.device('cpu'))
+	text = data.indsToString(text_inds)
 print()
 print("Synthesized text:")
-print("\t" + data.indsToString(text_inds))
+print("\t" + text)
 print()
 
 '''
