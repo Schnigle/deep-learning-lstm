@@ -5,6 +5,8 @@
 import torch
 import math
 from transformers import BertModel, BertTokenizer
+import utility
+import torch.nn.functional as F
 
 class CharacterData():
 	def __init__(self, file_path, device):
@@ -53,48 +55,51 @@ class CharacterData():
 class VecData():
 	def __init__(self, file_path, device):
 		# Raw text data
-		self.text_data = [x.strip() for x in open(file_path, encoding="utf-8").read().split('.')]
+		self.text_data = [open(file_path, encoding="utf-8").read().strip()]
 		# BERT model
 		self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 		self.model = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True)
 		# ids (BERT input)
-		self.ids_list = self.text2ids(self.text_data)
+		self.ids_list = self.text2ids_list(self.text_data)
+		self.ids = self.ids_list2ids(self.ids_list)
+		self.tokens = self.ids2tokens(self.ids)
 		# Word embeddings
-		self.vec_data = self.ids2vecs(self.ids_list)
+		self.vec_data = self.ids_list2vecs(self.ids_list)
 		# K: Number of classes (dimensions of word embedding)
 		self.K = self.vec_data.shape[2]
 
 		self.device = device
 
-	def text2ids(self, text):
+	def text2ids_list(self, text):
 		ids = [torch.tensor([self.tokenizer.encode(t, add_special_tokens=True)]) for t in text]
 		return ids
 
-	def ids2vecs(self, ids_list):
-		# n_ids = ids.shape[1]
-		# size_batch = 512
-		# n_batch = math.ceil(n_ids/size_batch)
+	def ids_list2ids(self, ids_list):
+		ids = torch.empty(1, 0, dtype=torch.long)
+		for one_id in ids_list:
+			ids = torch.cat([ids, one_id], dim=1)
+		return ids
+
+	def ids2tokens(self, ids):
+		tokens = self.tokenizer.convert_ids_to_tokens(ids[0, :])
+		return tokens
+
+	def ids_list2vecs(self, ids_list):
 		vecs = torch.empty(0, 1, 768)
-		for ids in ids_list:
+		n = len(ids_list) 
+		for i, ids in enumerate(ids_list):
+			print("\t {} % done.".format(round(i/n*100)), end="\r")
 			with torch.no_grad():
-				hidden_states = self.model(ids)[2]
-			vecs_batch = torch.stack(hidden_states[:4]).sum(0).transpose(0, 1)
+				output = self.model(ids)
+				hidden_states = output[2]
+			vecs_batch = F.normalize(torch.stack(hidden_states[:4]).sum(0), dim=2).transpose(0, 1)
 			vecs = torch.cat([vecs, vecs_batch], dim=0)
 		return vecs
-
-	def vecs2text(self, vecs):
-		# Convert n*K matrix of word embeddings to text 
-
-		# n_vec_data = self.vec_data.shape[0]
-		# trimmed_vec_data = self.vec_data.narrow(0, 1, n_vec_data - 2)
-		dotted = torch.mm(self.vec_data.squeeze(1), vecs.transpose(0, 1))
-		argmax = dotted.max(0)[1]
-		ids = torch.empty(1, 0, dtype=torch.long)
-		# print(self.ids[0].shape)
-		# exit()
-		for one_id in self.ids_list:
-			ids = torch.cat([ids, one_id], dim=1)
-		ids = ids.squeeze(0)[argmax]
-		text = self.tokenizer.decode(ids)
-		return text
-
+	
+	def veclike2vec(self, vec):
+		similarity = F.cosine_similarity(self.vec_data.squeeze(1), vec)
+		sm = F.softmax(similarity, dim=0)
+		idx = utility.randomSampleFromWeights(sm)
+		vec = self.vec_data[idx, :, :]
+		id = self.ids[0, idx]
+		return vec, id

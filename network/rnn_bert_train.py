@@ -21,20 +21,16 @@ import utility
 import torch.nn.functional as F
 
 # Train the network on a single character sequence
-def train_batch(net, optimizer, input_seq_tensor, target_seq_tensor, hidden):
+def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden):
 	net.zero_grad()
 	optimizer.zero_grad()
-	# print(input_seq_tensor.shape)
-	# print(target_seq_tensor.shape)
 
 	loss = 0
 	# Loop through each vec in the sequence
 	for i in range(input_seq_tensor.size(0)):
 		output, hidden = net(input_seq_tensor[i], hidden)
-		# print(input_seq_tensor[i].shape)
-		# print(output.shape)
-		# exit()
-		l = cross_entropy(output, target_seq_tensor[i])
+		output = F.normalize(output, dim=1)
+		l = criterion(output, target_seq_tensor[i].unsqueeze(0), torch.tensor(1))
 		loss += l
 
 	loss.backward()
@@ -42,11 +38,7 @@ def train_batch(net, optimizer, input_seq_tensor, target_seq_tensor, hidden):
 
 	return output, loss.item(), hidden.detach()
 
-def cross_entropy(pred, soft_targets):
-    logsoftmax = nn.LogSoftmax(dim=1)
-    return torch.sum(- soft_targets * logsoftmax(pred))
-
-def train_net(net, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
+def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
 	print("Training progress: ")
 	smooth_loss = 0
 	smooth_interpolation_rate = 0.02
@@ -54,7 +46,7 @@ def train_net(net, optimizer, data, n_hidden, seq_length, n_epochs, learning_rat
 	loss_vec = []
 	# Current inner loop iteration (total)
 	current_iteration = 0
-	expected_number_of_iterations = (len(data.text_data) / seq_length) * n_epochs    # (approximative)
+	expected_number_of_iterations = (data.vec_data.size(0) / seq_length) * n_epochs    # (approximative)
 
 	start_time = time.time()
 
@@ -63,10 +55,10 @@ def train_net(net, optimizer, data, n_hidden, seq_length, n_epochs, learning_rat
 		i=0
 		hidden = net.initHidden(device)
 		# One iteration = one sequence of text data (such as 25 characters)
-		while i < (len(data.text_data) - seq_length):
+		while i < (data.vec_data.size(0) - seq_length):
 			X = data.vec_data[i:i+seq_length, :, :]
-			Y = data.vec_data[i+1:i+seq_length+1, :, :].squeeze(1)
-			output, loss, hidden = train_batch(net, optimizer, X, Y, hidden)
+			Y = data.vec_data[i+1:i+seq_length+1, 0, :]
+			output, loss, hidden = train_batch(net, criterion, optimizer, X, Y, hidden)
 			if current_iteration == 0:
 				smooth_loss = loss
 			else:
@@ -91,12 +83,12 @@ def synthesize_words(data, net, n, device):
 	hidden = net.initHidden(device)
 	net.zero_grad()
 	prev_vec = data.vec_data[0]
-	vecs = torch.empty(0, data.K)
+	vecs = torch.empty(n, data.K)
+	ids = [None]*n
 	for i in range(n):
 		output, hidden = net(prev_vec, hidden)
-		# print(output.shape)
-		# exit()
-		vecs = torch.cat([vecs, output], dim=0)
-		prev_vec = output
-	words = data.vecs2text(vecs)
+		output = F.normalize(output, dim=1)
+		vecs[i], ids[i] = data.veclike2vec(output)
+		prev_vec = vecs[i].unsqueeze(0)
+	words = data.tokenizer.decode(ids)
 	return words
