@@ -18,11 +18,13 @@ import rnn_char_net
 import rnn_char_train
 import lstm_char_net
 import lstm_char_train
+import lstm_word_net
+import lstm_word_train
 import data
 import utility
 import sys
 
-syn_length = 500
+syn_length = 2000
 seed = random.randint(1, 10000)
 # seed = 999
 
@@ -41,15 +43,20 @@ random.seed(seed)
 checkpoint = torch.load(file_path)
 module_id = checkpoint['module_id']
 if module_id == 'lstm_char':
+	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
 	net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'])
 	synth = lstm_char_train.synthesize_characters
 elif module_id == 'rnn_char':
+	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
 	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 	synth = rnn_char_train.synthesize_characters
+elif module_id == 'lstm_word':
+	data = data.WordData(checkpoint['input_file_name'], torch.device('cpu'))
+	net = lstm_word_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], data.K, checkpoint['embedding_dim'])
+	synth = lstm_word_train.synthesize_characters
 net.load_state_dict(checkpoint['model_state_dict'])
 loss_vec = checkpoint['loss_vec']
 smooth_loss_vec = checkpoint['smooth_loss_vec']
-data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
 
 '''
     Synthesize some text
@@ -59,6 +66,8 @@ print()
 print("Synthesized text:")
 print("\t" + data.indsToString(text_inds))
 print()
+
+print(checkpoint['config_text'])
 
 '''
     Plot loss
@@ -75,5 +84,5 @@ plt.xlabel("Training iteration")
 plt.ylabel("Training loss")
 plt.xlim(0, len(smooth_loss_vec))
 # Note: y-max is quite arbitrary and depends on the loss metric and data
-plt.ylim(0, 150)
+plt.ylim(0, 5)
 plt.show()

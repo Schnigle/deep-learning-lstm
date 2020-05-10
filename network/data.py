@@ -3,6 +3,7 @@
 '''
 
 import torch
+import re
 
 class CharacterData():
 	def __init__(self, file_path, device):
@@ -46,4 +47,80 @@ class CharacterData():
 		str = ""
 		for i in inds:
 			str += self.ind_to_char[i]
+		return str
+
+class WordData():
+	def __init__(self, file_path, device):
+		# Raw text data
+		self.device = device
+		self.text_data = open(file_path, encoding="utf-8").read().strip()
+		# self.text_data = "Hello   \tthere\n  General kebono"
+		# Keep some special characters as "words"
+		self.special_chars = [".", ",", "?", "!", ":", ";", "\"", "(", ")", "\n", "[WS]", "[EQ]"]
+		# self.capitalized_words = ["i", "harry", "ron", "hermione", "weasley", "malfoy", "dumbledore", "dudley", "sirius", "mcgonagall"]
+		self.eos_chars = ".!?"
+		# self.text_data = self.text_data.replace(" ", "[WS]")
+		self.text_data = self.text_data.replace("\" ", " [EQ] ").replace("\"\n", " [EQ] \n ").replace(" \"", " [SQ] ").replace("\n\"", " \n [SQ] ")
+		for char in self.special_chars:
+			self.text_data = self.text_data.replace(char, " " + char + " ")
+		# self.text_data = self.text_data.replace(".", " . ").replace("?", " ? ").replace("!", " ! ").replace(",", " , ").replace("\"", " \" ").replace("(", " ( ").replace(")", " ) ")
+		# self.text_data = re.sub("(\t| )+", "[wspace]", self.text_data)
+		self.text_data = re.sub("(\t| )+", " ", self.text_data)
+		self.word_data = self.text_data.split(" ")
+		# print(self.text_data)
+		self.words = sorted(list(set(self.word_data)))
+		self.K = len(self.words)
+		self.word_to_ind = dict()
+		self.ind_to_word = dict()
+		for i in range(self.K):
+			self.word_to_ind[self.words[i]] = i
+			self.ind_to_word[i] = self.words[i]
+		# List of unique characters
+		# self.text_chars = sorted(list(set(self.text_data)))
+		# # K: Number of classes (unique characters)
+		# self.K = len(self.text_chars)
+
+		# # Create structures mapping class indexes to chars
+		# self.char_to_ind = dict()
+		# self.ind_to_char = dict()
+		# for i in range(self.K):
+		# 	self.char_to_ind[self.text_chars[i]] = i
+		# 	self.ind_to_char[i] = self.text_chars[i]
+
+	def isWord(self, str):
+		return not self.special_chars.__contains__(str)
+
+	def capitalize(self, str):
+		return str
+		# return str[0].upper() + str[1:len(str)]
+
+	def indsToString(self, inds):
+		str = ""
+		capitalize = True
+		previous_token = "."
+		for i in inds:
+			token = self.ind_to_word[i]
+			if token == "[EQ]":
+				str += "\" "
+			elif token == "\"":
+				str += " \""
+			# if token == "[WS]":
+			# 	str += " "
+			elif self.isWord(token):
+				if self.isWord(previous_token) or self.eos_chars.__contains__(previous_token) or previous_token == "," or previous_token == ";" or previous_token == ":":
+					str += " "
+				if capitalize or self.capitalized_words.__contains__(token):
+					str += self.capitalize(token)
+				else:
+					str += token
+				capitalize = False
+			else:
+				str += token
+				if self.eos_chars.__contains__(token):
+					capitalize = True
+				# if self.eos_chars.__contains__(token) or token == "," or token == ";" or (token == "\"" and previous_token == ","):
+				# 	str += " "
+				# if not self.eos_chars.__contains__(previous_token):
+				# 	str += " "
+			previous_token = token
 		return str
