@@ -6,7 +6,7 @@ import torch
 import re
 
 class CharacterData():
-	def __init__(self, file_path, device):
+	def __init__(self, file_path, device, validation_factor):
 		# Raw text data
 		self.text_data = open(file_path, encoding="utf-8").read().strip()
 		# List of unique characters
@@ -22,6 +22,9 @@ class CharacterData():
 			self.ind_to_char[i] = self.text_chars[i]
 		self.device = device
 		self.n_samples = len(self.text_data)
+		train_samples = round(len(self.text_data) * (1 - validation_factor))
+		self.train_data = self.text_data[0:train_samples]
+		self.val_data = self.text_data[train_samples + 1:]
 
 	# Convert a string to a one-hot [len(str), 1, K] tensor representation of all character classes in the string.
 	def stringToTensor(self, str):
@@ -55,23 +58,22 @@ class WordData():
 		# Raw text data
 		self.device = device
 		self.text_data = open(file_path, encoding="utf-8").read().strip()
-		# self.text_data = "Hello   \tthere\n  General kebono"
 		# Keep some special characters as "words"
 		self.special_chars = [".", ",", "?", "!", ":", ";", "\"", "(", ")", "\n", "[WS]", "[EQ]", "[SQ]"]
-		# self.capitalized_words = ["i", "harry", "ron", "hermione", "weasley", "malfoy", "dumbledore", "dudley", "sirius", "mcgonagall"]
 		self.eos_chars = ".!?"
-		# self.text_data = self.text_data.replace(" ", "[WS]")
+		# Use special characters for start and end qoutes
 		self.text_data = self.text_data.replace("\" ", " [EQ] ").replace("\"\n", " [EQ] \n ").replace(" \"", " [SQ] ").replace("\n\"", " \n [SQ] ").replace("\"", " ")
 		for char in self.special_chars:
 			self.text_data = self.text_data.replace(char, " " + char + " ")
-		# self.text_data = self.text_data.replace(".", " . ").replace("?", " ? ").replace("!", " ! ").replace(",", " , ").replace("\"", " \" ").replace("(", " ( ").replace(")", " ) ")
-		# self.text_data = re.sub("(\t| )+", "[wspace]", self.text_data)
+		# Split on space and newline
 		self.text_data = re.sub("(\t| )+", " ", self.text_data)
 		self.word_data = self.text_data.split(" ")
+		# Partition into training and validation data
 		train_samples = round(len(self.word_data) * (1 - validation_factor))
 		self.train_data = self.word_data[0:train_samples]
 		self.val_data = self.word_data[train_samples + 1:]
-		# print(self.text_data)
+		for word in self.train_data:
+			print(word)
 		self.words = sorted(list(set(self.word_data)))
 		self.K = len(self.words)
 		self.word_to_ind = dict()
@@ -80,28 +82,12 @@ class WordData():
 			self.word_to_ind[self.words[i]] = i
 			self.ind_to_word[i] = self.words[i]
 		self.n_samples = len(self.word_data)
-		# List of unique characters
-		# self.text_chars = sorted(list(set(self.text_data)))
-		# # K: Number of classes (unique characters)
-		# self.K = len(self.text_chars)
-
-		# # Create structures mapping class indexes to chars
-		# self.char_to_ind = dict()
-		# self.ind_to_char = dict()
-		# for i in range(self.K):
-		# 	self.char_to_ind[self.text_chars[i]] = i
-		# 	self.ind_to_char[i] = self.text_chars[i]
 
 	def isWord(self, str):
 		return not self.special_chars.__contains__(str)
 
-	def capitalize(self, str):
-		return str
-		# return str[0].upper() + str[1:len(str)]
-
 	def indsToString(self, inds):
 		str = ""
-		capitalize = True
 		previous_token = "."
 		for i in inds:
 			token = self.ind_to_word[i]
@@ -109,13 +95,10 @@ class WordData():
 				str += "\" "
 			elif token == "[SQ]":
 				str += " \""
-			# if token == "[WS]":
-			# 	str += " "
 			elif self.isWord(token):
 				if self.isWord(previous_token) or self.eos_chars.__contains__(previous_token) or previous_token == "," or previous_token == ";" or previous_token == ":":
 					str += " "
 				str += token
-				capitalize = False
 			else:
 				if token == "(":
 					str += " ("
@@ -123,11 +106,5 @@ class WordData():
 					str += ") "
 				else:
 					str += token
-				if self.eos_chars.__contains__(token):
-					capitalize = True
-				# if self.eos_chars.__contains__(token) or token == "," or token == ";" or (token == "\"" and previous_token == ","):
-				# 	str += " "
-				# if not self.eos_chars.__contains__(previous_token):
-				# 	str += " "
 			previous_token = token
 		return str

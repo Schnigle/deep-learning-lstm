@@ -18,8 +18,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
-# import lstm_char_net
-# import lstm_char_train
 import lstm_word_net
 import lstm_word_train
 import data
@@ -29,16 +27,16 @@ import utility
     Network and synthesis parameters
 '''
 # input_file_name = "data/speech.txt"
-input_file_name = "data/goblet_book.txt"
+input_file_name = "data/speech.txt"
 save_file_name = "lstm_word_save.pt"
-n_hidden = 1000
+n_hidden = 800
 n_layers = 1
 seq_length = 25
 syn_length = 500
-n_epochs = 10
+n_epochs = 40
 learning_rate = 0.01
-batch_size = 20
-embedding_dim = 500
+batch_size = 1
+embedding_dim = 800
 validation_factor = 0.2
 # seed = random.randint(1, 10000)
 seed = 999
@@ -62,11 +60,6 @@ else:
 torch.manual_seed(seed)
 random.seed(seed)
 data = data.WordData(input_file_name, device, validation_factor)
-# for word in data.words:
-# 	print(word)
-# # print(data.word_data)
-# print(len(data.words))
-# print(len(data.word_data))
 net = lstm_word_net.RNN_LSTM( data.K, n_hidden, data.K, n_layers, data.K, embedding_dim)
 if use_cuda:
     net = net.cuda()
@@ -104,6 +97,7 @@ torch.save({
     'loss_vec' : loss_vec,
     'smooth_loss_vec' : smooth_loss_vec,
     'val_loss_vec' : val_loss_vec,
+    'validation_factor' : validation_factor,
     'n_hidden' : n_hidden,
     'n_layers' : n_layers,
     'embedding_dim' : embedding_dim,

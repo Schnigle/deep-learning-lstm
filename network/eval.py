@@ -43,11 +43,11 @@ random.seed(seed)
 checkpoint = torch.load(file_path)
 module_id = checkpoint['module_id']
 if module_id == 'lstm_char':
-	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
+	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 	net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'])
 	synth = lstm_char_train.synthesize_characters
 elif module_id == 'rnn_char':
-	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
+	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 	synth = rnn_char_train.synthesize_characters
 elif module_id == 'lstm_word':

@@ -19,6 +19,7 @@ import lstm_char_net
 import time
 import utility
 import torch.nn.functional as F
+import copy
 
 # Train the network on a single character sequence
 def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, hidden_tuple):
@@ -45,24 +46,28 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 	smooth_interpolation_rate = 0.02
 	smooth_loss_vec = []
 	loss_vec = []
+	val_loss_vec = []
 	# Current inner loop iteration (total)
 	current_iteration = 0
-	expected_number_of_iterations = (len(data.text_data) / (seq_length * batch_size)) * n_epochs    # (approximative)
+	expected_number_of_iterations = (len(data.train_data) / (seq_length * batch_size)) * n_epochs    # (approximative)
 
 	start_time = time.time()
+	
+	state_dict_save = None
+	last_validation_loss = 0
 
 	# One epoch = one full run through the training data (such as goblet_book.txt)
 	for epoch in range(n_epochs):
 		i=0
 		hidden = net.initHidden(batch_size, device)
 		# One iteration = one sequence of text data (such as 25 characters)
-		while i < (len(data.text_data) - seq_length * batch_size):
+		while i < (len(data.train_data) - seq_length * batch_size):
 			# prepare data batches
 			X_batch = torch.zeros(seq_length, batch_size, data.K).to(device)
 			Y_batch = torch.zeros(seq_length, batch_size, dtype=torch.long).to(device)
 			for j in range(batch_size):
-				X_chars = data.text_data[i:i+seq_length]
-				Y_chars = data.text_data[i+1:i+seq_length+1]
+				X_chars = data.train_data[i:i+seq_length]
+				Y_chars = data.train_data[i+1:i+seq_length+1]
 				X = data.stringToTensor(X_chars)
 				Y = data.stringToTensorNLLLabel(Y_chars)
 				X_batch[:, j, :] = X.squeeze(1)
@@ -76,17 +81,42 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 			
 			current_iteration += 1
 			percent_done = round((current_iteration / expected_number_of_iterations) * 100)
-			if current_iteration % 5 == 0:
-				print("\t" + str(percent_done) + " % done. Smooth loss: " +  str("{:.2f}").format(smooth_loss), end="\r")
+			print("\t" + str(percent_done) + "% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss) + ". Last validation loss: " + str("{:0.2f}").format(last_validation_loss) + "\t\t\t", end="\r")
 			loss_vec.append(loss)
 			smooth_loss_vec.append(smooth_loss)
-
+		# Dynamic evaluation - let evaluation update weights and revert to the previous weights when training
+		state_dict_save = copy.deepcopy(net.state_dict())
+		i=0
+		first_val_batch = True
+		hidden = net.initHidden(batch_size, device)
+		# One iteration = one sequence of text data (such as 25 characters)
+		while i + batch_size * seq_length + 1 < len(data.val_data):
+			# prepare data batches
+			X_batch = torch.zeros(seq_length, batch_size, data.K).to(device)
+			Y_batch = torch.zeros(seq_length, batch_size, dtype=torch.long).to(device)
+			for j in range(batch_size):
+				X_chars = data.val_data[i:i+seq_length]
+				Y_chars = data.val_data[i+1:i+seq_length+1]
+				X = data.stringToTensor(X_chars)
+				Y = data.stringToTensorNLLLabel(Y_chars)
+				X_batch[:, j, :] = X.squeeze(1)
+				Y_batch[:, j] = Y
+				i += seq_length
+			output, loss, hidden = train_batch(net, criterion, optimizer, X_batch, Y_batch, hidden)
+			if first_val_batch:
+				last_validation_loss = loss
+				first_val_batch = False
+			else:
+				last_validation_loss = last_validation_loss * (1 - smooth_interpolation_rate * 2) + loss * smooth_interpolation_rate * 2
+			val_loss_vec.append(loss)
+			print("\t" + str(percent_done) + "% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss) + ". Last validation loss: " + str("{:0.2f}").format(last_validation_loss) + "\t\t\t", end="\r")
+			
 	total_time = time.time() - start_time
-	print("\t100% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss))
+	print("\t100% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss) + ". Last validation loss: " + str("{:0.2f}").format(last_validation_loss) + "\t\t\t", end="\r")
 	print()
 	print("Total training time: " + str(round(total_time)) + " seconds")
 
-	return loss_vec, smooth_loss_vec
+	return loss_vec, smooth_loss_vec, val_loss_vec
 
 # Synthesize a text sequence of length n
 def synthesize_characters(data, net, n, device):

@@ -26,15 +26,16 @@ import utility
 '''
     Network and synthesis parameters
 '''
-input_file_name = "data/goblet_book.txt"
+input_file_name = "data/speech.txt"
 save_file_name = "lstm_char_save.pt"
 n_hidden = 250
 n_layers = 2
 seq_length = 25
 syn_length = 500
-n_epochs = 20
+n_epochs = 100
 learning_rate = 0.01
-batch_size = 5
+validation_factor = 0.2
+batch_size = 1
 # seed = random.randint(1, 10000)
 seed = 999
 use_cuda = True
@@ -56,7 +57,7 @@ else:
 '''
 torch.manual_seed(seed)
 random.seed(seed)
-data = data.CharacterData(input_file_name, device)
+data = data.CharacterData(input_file_name, device, validation_factor)
 net = lstm_char_net.RNN_LSTM( data.K, n_hidden, data.K, n_layers)
 if use_cuda:
     net = net.cuda()
@@ -77,7 +78,7 @@ print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
 print()
 
-loss_vec, smooth_loss_vec = lstm_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)
+loss_vec, smooth_loss_vec, val_loss_vec = lstm_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)
 
 '''
     Save network and training data
@@ -92,6 +93,8 @@ torch.save({
     'optimizer_state_dict' : optimizer.state_dict(),
     'loss_vec' : loss_vec,
     'smooth_loss_vec' : smooth_loss_vec,
+    'val_loss_vec' : val_loss_vec,
+    'validation_factor' : validation_factor,
     'n_hidden' : n_hidden,
     'n_layers' : n_layers,
     'batch_size' : batch_size,
