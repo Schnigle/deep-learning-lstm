@@ -55,7 +55,7 @@ class CharacterData():
 class VecData():
 	def __init__(self, file_path, device):
 		# Raw text data
-		self.text_data = [open(file_path, encoding="utf-8").read().strip()]
+		self.text_data = [x.strip() for x in open(file_path, encoding="utf-8").read().split('.')]
 		# BERT model
 		self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 		self.model = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True)
@@ -77,6 +77,8 @@ class VecData():
 	def ids_list2ids(self, ids_list):
 		ids = torch.empty(1, 0, dtype=torch.long)
 		for one_id in ids_list:
+			length = one_id.size(1)
+			one_id = one_id.narrow(1, 1, length - 2)
 			ids = torch.cat([ids, one_id], dim=1)
 		return ids
 
@@ -93,6 +95,8 @@ class VecData():
 				output = self.model(ids)
 				hidden_states = output[2]
 			vecs_batch = F.normalize(torch.stack(hidden_states[:4]).sum(0), dim=2).transpose(0, 1)
+			length = vecs_batch.size(0)
+			vecs_batch = vecs_batch.narrow(0, 1, length - 2)
 			vecs = torch.cat([vecs, vecs_batch], dim=0)
 		return vecs
 	
