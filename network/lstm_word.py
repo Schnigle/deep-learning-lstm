@@ -31,14 +31,15 @@ import utility
 # input_file_name = "data/speech.txt"
 input_file_name = "data/goblet_book.txt"
 save_file_name = "lstm_word_save.pt"
-n_hidden = 800
-n_layers = 2
-seq_length = 50
+n_hidden = 1000
+n_layers = 1
+seq_length = 25
 syn_length = 500
-n_epochs = 50
+n_epochs = 10
 learning_rate = 0.01
-batch_size = 10
-embedding_dim = 1000
+batch_size = 20
+embedding_dim = 500
+validation_factor = 0.2
 # seed = random.randint(1, 10000)
 seed = 999
 use_cuda = True
@@ -60,7 +61,7 @@ else:
 '''
 torch.manual_seed(seed)
 random.seed(seed)
-data = data.WordData(input_file_name, device)
+data = data.WordData(input_file_name, device, validation_factor)
 # for word in data.words:
 # 	print(word)
 # # print(data.word_data)
@@ -87,7 +88,7 @@ print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
 print()
 
-loss_vec, smooth_loss_vec = lstm_word_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)
+loss_vec, smooth_loss_vec, val_loss_vec = lstm_word_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)
 
 '''
     Save network and training data
@@ -102,12 +103,14 @@ torch.save({
     'optimizer_state_dict' : optimizer.state_dict(),
     'loss_vec' : loss_vec,
     'smooth_loss_vec' : smooth_loss_vec,
+    'val_loss_vec' : val_loss_vec,
     'n_hidden' : n_hidden,
     'n_layers' : n_layers,
     'embedding_dim' : embedding_dim,
     'batch_size' : batch_size,
     'K' : data.K,
     'seq_length' : seq_length,
+    'n_epochs' : n_epochs,
     'learning_rate' : learning_rate,
     'input_file_name' : input_file_name,
     'config_text' : config_text,

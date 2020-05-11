@@ -97,6 +97,7 @@ torch.save({
     'batch_size' : batch_size,
     'K' : data.K,
     'seq_length' : seq_length,
+    'n_epochs' : n_epochs,
     'learning_rate' : learning_rate,
     'input_file_name' : input_file_name,
     'config_text' : config_text,
