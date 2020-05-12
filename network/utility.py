@@ -23,6 +23,8 @@ import rnn_char_train
 import rnn_word_net
 import rnn_word_net_naive
 import rnn_word_train
+import rnn_bert_net
+import rnn_bert_train
 import lstm_char_net
 import lstm_char_train
 import lstm_word_net
@@ -54,14 +56,18 @@ def loadNet(checkpoint):
 		synth = rnn_char_train.synthesize_characters
 	elif module_id == 'lstm_word':
 		data_loader = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
-		net = lstm_word_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], data.K, checkpoint['embedding_dim'])
+		net = lstm_word_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], data_loader.K, checkpoint['embedding_dim'])
 		synth = lstm_word_train.synthesize_characters
 	elif module_id == 'rnn_word':
 		data_loader = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
-		net = rnn_word_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], data.K, checkpoint['embedding_dim'])
+		net = rnn_word_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], data_loader.K, checkpoint['embedding_dim'])
 		synth = rnn_word_train.synthesize_characters
 	elif module_id == 'rnn_word_naive':
 		data_loader = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = rnn_word_net_naive.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['embedding_dim'])
 		synth = rnn_word_train.synthesize_characters
+	elif module_id == 'rnn_bert':
+		net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
+		data_loader = data.VecData(checkpoint['input_file_name'], torch.device('cpu'))
+		synth = rnn_bert_train.synthesize_words
 	return net, data_loader, synth
