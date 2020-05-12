@@ -16,7 +16,6 @@ class RNN_LSTM(nn.Module):
     def forward(self, input, hidden_cell):
         embed = self.embedding(input)
         (hidden, cell) = hidden_cell
-        # print(embed.size())
         output, (hidden, cell) = self.lstm(embed, (hidden, cell))
         output = self.lstm2o(output)
         return output, (hidden, cell)

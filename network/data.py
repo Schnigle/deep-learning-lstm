@@ -72,8 +72,6 @@ class WordData():
 		train_samples = round(len(self.word_data) * (1 - validation_factor))
 		self.train_data = self.word_data[0:train_samples]
 		self.val_data = self.word_data[train_samples + 1:]
-		for word in self.train_data:
-			print(word)
 		self.words = sorted(list(set(self.word_data)))
 		self.K = len(self.words)
 		self.word_to_ind = dict()

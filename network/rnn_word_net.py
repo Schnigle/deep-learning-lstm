@@ -8,12 +8,13 @@ class RNN(nn.Module):
 
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(vocab_size, embedding_size)
-        self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
+        self.i2h = nn.Linear(embedding_size + hidden_size, hidden_size)
         self.tanh = nn.Tanh()
         self.h2o = nn.Linear(hidden_size, output_size)
 
     def forward(self, input, hidden):
-        combined = torch.cat((input, hidden), 1)
+        embed = self.embedding(input)
+        combined = torch.cat((embed, hidden), 1)
         hidden = self.i2h(combined)
         # tanh helps for stability when using higher learning rates
         hidden = self.tanh(hidden)

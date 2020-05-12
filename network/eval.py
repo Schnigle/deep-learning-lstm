@@ -16,6 +16,8 @@ import matplotlib.animation as animation
 import time
 import rnn_char_net
 import rnn_char_train
+import rnn_word_net
+import rnn_word_train
 import lstm_char_net
 import lstm_char_train
 import lstm_word_net
@@ -54,6 +56,10 @@ elif module_id == 'lstm_word':
 	data = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 	net = lstm_word_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], data.K, checkpoint['embedding_dim'])
 	synth = lstm_word_train.synthesize_characters
+elif module_id == 'rnn_word':
+	data = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
+	net = rnn_word_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], data.K, checkpoint['embedding_dim'])
+	synth = rnn_word_train.synthesize_characters
 net.load_state_dict(checkpoint['model_state_dict'])
 loss_vec = checkpoint['loss_vec']
 smooth_loss_vec = checkpoint['smooth_loss_vec']
@@ -94,7 +100,7 @@ title = "Loss evolution of " + checkpoint['config_text']
 plt.title(title)
 plt.xlabel("Iteration")
 plt.ylabel("Loss")
-plt.xlim(0, len(smooth_loss_vec))
+plt.xlim(0, len(smooth_loss_vec) + iterations_per_epoch)
 # Note: y-max is quite arbitrary and depends on the loss metric and data
 plt.ylim(0, 10)
 plt.show()

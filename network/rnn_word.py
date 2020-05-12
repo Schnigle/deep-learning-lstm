@@ -19,21 +19,22 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
 import data
-import rnn_char_net
-import rnn_char_train
+import rnn_word_net
+import rnn_word_train
 import utility
 
 '''
     Network and synthesis parameters
 '''
 input_file_name = "data/speech.txt"
-save_file_name = "rnn_char_save.pt"
-n_hidden = 50
+save_file_name = "rnn_word_save.pt"
+n_hidden = 1000
 seq_length = 25
 syn_length = 500
 n_epochs = 100
-learning_rate = 0.1
+learning_rate = 0.01
 validation_factor = 0.2
+embedding_dim = 1000
 seed = random.randint(1, 10000)
 # seed = 999
 use_cuda = False
@@ -55,8 +56,8 @@ else:
 '''
 torch.manual_seed(seed)
 random.seed(seed)
-data = data.CharacterData(input_file_name, device, validation_factor)
-net = rnn_char_net.RNN(data.K, n_hidden, data.K)
+data = data.WordData(input_file_name, device, validation_factor)
+net = rnn_word_net.RNN(data.K, n_hidden, data.K, data.K, embedding_dim)
 if use_cuda:
     net = net.cuda()
 criterion = nn.CrossEntropyLoss()
@@ -75,7 +76,7 @@ print("\tGPU: ", use_cuda)
 print("\tValidation data factor: ", validation_factor)
 print()
 
-loss_vec, smooth_loss_vec, val_loss_vec = rnn_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
+loss_vec, smooth_loss_vec, val_loss_vec = rnn_word_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device)
 
 '''
     Save network and training data
@@ -83,7 +84,7 @@ loss_vec, smooth_loss_vec, val_loss_vec = rnn_char_train.train_net(net, criterio
 save_folder = 'saves'
 if not os.path.exists(save_folder):
     os.makedirs(save_folder)
-module_id = "rnn_char"
+module_id = "rnn_word"
 config_text = "Baseline RNN (M=" + str(n_hidden) + ", seq_len=" + str(seq_length) + ", eta=" + str(learning_rate) + ")"
 torch.save({
     'model_state_dict' : net.state_dict(),
@@ -97,6 +98,7 @@ torch.save({
     'seq_length' : seq_length,
     'n_epochs' : n_epochs,
     'learning_rate' : learning_rate,
+    'embedding_dim' : embedding_dim,
     'batch_size' : 1,
     'input_file_name' : input_file_name,
     'config_text' : config_text,
@@ -106,7 +108,7 @@ torch.save({
 '''
     Synthesize some text
 '''
-text_inds = rnn_char_train.synthesize_characters(data, net, syn_length, device)
+text_inds = rnn_word_train.synthesize_characters(data, net, syn_length, device)
 print()
 print("Synthesized text:")
 print("\t" + data.indsToString(text_inds))

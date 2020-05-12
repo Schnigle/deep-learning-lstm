@@ -27,17 +27,17 @@ import utility
     Network and synthesis parameters
 '''
 # input_file_name = "data/speech.txt"
-input_file_name = "data/speech.txt"
+input_file_name = "data/goblet_book.txt"
 save_file_name = "lstm_word_save.pt"
-n_hidden = 800
-n_layers = 1
+n_hidden = 400
+n_layers = 2
 seq_length = 25
 syn_length = 500
-n_epochs = 40
+n_epochs = 50
 learning_rate = 0.01
-batch_size = 1
-embedding_dim = 800
-validation_factor = 0.2
+batch_size = 20
+embedding_dim = 1000
+validation_factor = 0.1
 # seed = random.randint(1, 10000)
 seed = 999
 use_cuda = True
@@ -79,6 +79,7 @@ print("\tNumber of epochs: ", n_epochs)
 print("\tBatch size: ", batch_size)
 print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
+print("\tValidation data factor: ", validation_factor)
 print()
 
 loss_vec, smooth_loss_vec, val_loss_vec = lstm_word_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)

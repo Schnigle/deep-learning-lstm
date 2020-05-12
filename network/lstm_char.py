@@ -76,6 +76,7 @@ print("\tNumber of epochs: ", n_epochs)
 print("\tBatch size: ", batch_size)
 print("\tRandom seed: ", seed)
 print("\tGPU: ", use_cuda)
+print("\tValidation data factor: ", validation_factor)
 print()
 
 loss_vec, smooth_loss_vec, val_loss_vec = lstm_char_train.train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, batch_size, device)
