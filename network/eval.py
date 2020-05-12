@@ -17,6 +17,7 @@ import time
 import rnn_char_net
 import rnn_char_train
 import rnn_word_net
+import rnn_word_net_naive
 import rnn_word_train
 import lstm_char_net
 import lstm_char_train
@@ -43,23 +44,7 @@ torch.manual_seed(seed)
 random.seed(seed)
 
 checkpoint = torch.load(file_path)
-module_id = checkpoint['module_id']
-if module_id == 'lstm_char':
-	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
-	net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'])
-	synth = lstm_char_train.synthesize_characters
-elif module_id == 'rnn_char':
-	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
-	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
-	synth = rnn_char_train.synthesize_characters
-elif module_id == 'lstm_word':
-	data = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
-	net = lstm_word_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], data.K, checkpoint['embedding_dim'])
-	synth = lstm_word_train.synthesize_characters
-elif module_id == 'rnn_word':
-	data = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
-	net = rnn_word_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], data.K, checkpoint['embedding_dim'])
-	synth = rnn_word_train.synthesize_characters
+net, data, synth = utility.loadNet(checkpoint)
 net.load_state_dict(checkpoint['model_state_dict'])
 loss_vec = checkpoint['loss_vec']
 smooth_loss_vec = checkpoint['smooth_loss_vec']
@@ -85,22 +70,19 @@ val_loss_vec = checkpoint['val_loss_vec']
 smooth_val_loss_vec = []
 smooth_val = val_loss_vec[0]
 interpolation_rate = 0.01
-val_factor = round(len(loss_vec) / len(val_loss_vec))
+val_scale_factor = round(len(loss_vec) / len(val_loss_vec))
 for val in val_loss_vec:
 	smooth_val = smooth_val * (1 - interpolation_rate) + val * interpolation_rate
 	smooth_val_loss_vec.append(smooth_val)
-# iterations_per_epoch = round(len(loss_vec) / checkpoint['n_epochs'])
 iterations_per_epoch = round(data.n_samples / checkpoint['batch_size'] / checkpoint['seq_length'])
 plt.plot(smooth_loss_vec, 'blue')
-plt.plot(range(iterations_per_epoch, len(smooth_val_loss_vec) * val_factor + iterations_per_epoch, val_factor), smooth_val_loss_vec, 'orange')
-# print(val_loss_vec)
-# plt.scatter(range(0, len(val_loss_vec)), val_loss_vec, 'lightblue')
+plt.plot(range(iterations_per_epoch, len(smooth_val_loss_vec) * val_scale_factor + iterations_per_epoch, val_scale_factor), smooth_val_loss_vec, 'orange')
 plt.legend(['Training loss', 'Validation loss'])
 title = "Loss evolution of " + checkpoint['config_text']
 plt.title(title)
 plt.xlabel("Iteration")
 plt.ylabel("Loss")
-plt.xlim(0, len(smooth_loss_vec) + iterations_per_epoch)
+plt.xlim(0, len(smooth_loss_vec))
 # Note: y-max is quite arbitrary and depends on the loss metric and data
 plt.ylim(0, 10)
 plt.show()
