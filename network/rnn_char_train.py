@@ -100,3 +100,52 @@ def synthesize_characters(data, net, n, device):
 		word.append(char_index)
 		prev_char = data.toOneHot(char_index)
 	return word
+
+def synthesize_characters_beam(data, net, n, device, k, d):
+
+	def synthesize_step(word, prob, hidden, depth, current_char_idx):
+		# print(word)
+		# print(prob)
+		depth += 1
+		if depth == d + current_char_idx:
+			# exit()
+			if bestprob[current_char_idx] == None or prob < bestprob[current_char_idx]:
+				bestword[current_char_idx] = word[current_char_idx + 1]
+				bestprob[current_char_idx] = prob
+				# print(data.indsToString(filter(None.__ne__, bestword)), end="\r")
+				current_char_idx += 1
+				# print('text: ' + data.indsToString(bestword[:current_char_idx]))
+				# print(bestword)
+				# print(bestprob)
+		makechildren = current_char_idx < n and (bestprob[current_char_idx] == None or prob < bestprob[current_char_idx])
+		if makechildren:
+			output, hidden = net(data.toOneHot(word[-1]), hidden)
+			# Convert output to probability weights. 
+			probs = -torch.log(F.softmax(output, dim=1)[0])
+			if k == 0:
+				chars_index = range(probs.size(0))
+			else:
+				chars_index = torch.topk(probs, k=k, dim=0, largest=False)[1].tolist()
+			probs *= prob
+			# print(probs)
+			for i in chars_index:
+				newword = word + [i]
+				synthesize_step(newword, probs[i].item(), hidden, depth, current_char_idx)
+
+	hidden = net.initHidden(device)
+	net.zero_grad()
+	bestword = [None]*n
+	bestprob = [None]*n
+
+	firstchar = data.char_to_ind['.']
+	word = [[firstchar]]
+	depth = 0
+	current_char_idx = 0
+	prob = 1
+	for i in range(n):
+		probs
+		for char in 
+			output, hidden = net(data.toOneHot(word[-1]), hidden)
+	synthesize_step(word, prob, hidden, depth, current_char_idx)
+
+	return bestword

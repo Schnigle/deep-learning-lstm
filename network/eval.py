@@ -24,7 +24,10 @@ import data
 import utility
 import sys
 
-syn_length = 500
+syn_length = 200
+syn_beam_search = True
+beam_search_width = 0 # 0 for no width limit
+beam_search_depth = 3
 seed = random.randint(1, 10000)
 # seed = 999
 
@@ -47,7 +50,10 @@ if module_id == 'lstm_char':
 	synth = lstm_char_train.synthesize_characters
 elif module_id == 'rnn_char':
 	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
-	synth = rnn_char_train.synthesize_characters
+	if syn_beam_search:
+		synth = rnn_char_train.synthesize_characters_beam
+	else:
+		synth = rnn_char_train.synthesize_characters
 elif module_id == 'rnn_bert':
 	net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 	synth = rnn_bert_train.synthesize_words
@@ -63,9 +69,12 @@ else:
     Synthesize some text
 '''
 if module_id == 'rnn_bert':
-	text = rnn_bert_train.synthesize_words(data, net, syn_length, torch.device('cpu'))
+	text = synth(data, net, syn_length, torch.device('cpu'))
 else:
-	text_inds = synth(data, net, syn_length, torch.device('cpu'))
+	if syn_beam_search:
+		text_inds = synth(data, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_depth)
+	else:
+		text_inds = synth(data, net, syn_length, torch.device('cpu'))
 	text = data.indsToString(text_inds)
 print()
 print("Synthesized text:")
