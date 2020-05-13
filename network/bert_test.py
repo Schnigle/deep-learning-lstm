@@ -7,7 +7,7 @@ import torch.nn.functional as F
 # import tokenizers
 
 
-print(F.softmax(torch.tensor([100, -4, 50, 20]).float(), dim=0))
+print(torch.empty(6, 3, 2))
 exit()
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')

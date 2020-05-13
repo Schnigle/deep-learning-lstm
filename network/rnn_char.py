@@ -30,12 +30,15 @@ input_file_name = "data/speech.txt"
 save_file_name = "rnn_char_save.pt"
 n_hidden = 50
 seq_length = 25
-syn_length = 500
-n_epochs = 100
+syn_length = 200
+syn_beam_search = True
+beam_search_width = 6
+beam_search_sampler = 'WeightedNoReplacement' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
+n_epochs = 60
 learning_rate = 0.1
 validation_factor = 0.2
 seed = random.randint(1, 10000)
-# seed = 999
+seed = 999
 use_cuda = False
 '''
     Note: Using the GPU is currently only beneficial for very large network
@@ -107,7 +110,10 @@ torch.save({
 '''
     Synthesize some text
 '''
-text_inds = rnn_char_train.synthesize_characters(data, net, syn_length, device)
+if syn_beam_search:
+    text_inds = rnn_char_train.synthesize_characters_beam(data, net, syn_length, device, beam_search_width, beam_search_sampler)
+else:
+    text_inds = rnn_char_train.synthesize_characters(data, net, syn_length, device)
 print()
 print("Synthesized text:")
 print("\t" + data.indsToString(text_inds))

@@ -141,3 +141,7 @@ def synthesize_characters(data, net, n, device):
 		word.append(char_index)
 		prev_char = data.toOneHot(char_index)
 	return word
+
+def synthesize_characters_beam(data, net, n, device, k, sampler='Topk'):
+	print("Beam search has not yet been implemented for this network.")
+	exit()

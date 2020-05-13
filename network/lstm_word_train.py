@@ -152,3 +152,7 @@ def synthesize_characters(data, net, n, device):
 		sentence.append(char_index)
 		prev_char = torch.tensor([char_index], dtype=torch.long, device=device)
 	return sentence
+
+def synthesize_characters_beam(data, net, n, device, k, sampler='Topk'):
+	print("Error: Beam search has not yet been implemented for this network.")
+	exit()

@@ -44,7 +44,7 @@ def randomSampleFromWeights(weights):
 	ii = ixs[0].item()
 	return ii
 
-def loadNet(checkpoint):
+def loadNet(checkpoint, use_beam_search):
 	module_id = checkpoint['module_id']
 	if module_id == 'lstm_char':
 		data_loader = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
@@ -54,20 +54,36 @@ def loadNet(checkpoint):
 		data_loader = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 		synth = rnn_char_train.synthesize_characters
+		if use_beam_search:
+			synth = rnn_char_train.synthesize_characters_beam
+		else:
+			synth = rnn_char_train.synthesize_characters
 	elif module_id == 'lstm_word':
 		data_loader = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = lstm_word_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], data_loader.K, checkpoint['embedding_dim'])
-		synth = lstm_word_train.synthesize_characters
+		if use_beam_search:
+			synth = lstm_word_train.synthesize_characters_beam
+		else:
+			synth = lstm_word_train.synthesize_characters
 	elif module_id == 'rnn_word':
 		data_loader = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = rnn_word_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], data_loader.K, checkpoint['embedding_dim'])
-		synth = rnn_word_train.synthesize_characters
+		if use_beam_search:
+			synth = rnn_word_train.synthesize_characters_beam
+		else:
+			synth = rnn_word_train.synthesize_characters
 	elif module_id == 'rnn_word_naive':
 		data_loader = data.WordData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = rnn_word_net_naive.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['embedding_dim'])
-		synth = rnn_word_train.synthesize_characters
+		if use_beam_search:
+			synth = rnn_word_train.synthesize_characters_beam
+		else:
+			synth = rnn_word_train.synthesize_characters
 	elif module_id == 'rnn_bert':
 		net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 		data_loader = data.VecData(checkpoint['input_file_name'], torch.device('cpu'))
-		synth = rnn_bert_train.synthesize_words
+		if use_beam_search:
+			synth = rnn_bert_train.synthesize_characters_beam
+		else:
+			synth = rnn_bert_train.synthesize_characters
 	return net, data_loader, synth

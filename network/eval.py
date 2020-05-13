@@ -29,7 +29,10 @@ import data
 import utility
 import sys
 
-syn_length = 1000
+syn_length = 500
+syn_beam_search = True
+beam_search_width = 30
+beam_search_sampler = 'WeightedNoReplacement' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
 seed = random.randint(1, 10000)
 # seed = 999
 
@@ -46,7 +49,7 @@ torch.manual_seed(seed)
 random.seed(seed)
 
 checkpoint = torch.load(file_path)
-net, data_loader, synth = utility.loadNet(checkpoint)
+net, data_loader, synth = utility.loadNet(checkpoint, syn_beam_search)
 net.load_state_dict(checkpoint['model_state_dict'])
 loss_vec = checkpoint['loss_vec']
 smooth_loss_vec = checkpoint['smooth_loss_vec']
@@ -55,9 +58,12 @@ smooth_loss_vec = checkpoint['smooth_loss_vec']
     Synthesize some text
 '''
 if checkpoint['module_id'] == 'rnn_bert':
-	text = rnn_bert_train.synthesize_words(data_loader, net, syn_length, torch.device('cpu'))
+	text = synth(data_loader, net, syn_length, torch.device('cpu'))
 else:
-	text_inds = synth(data_loader, net, syn_length, torch.device('cpu'))
+	if syn_beam_search:
+		text_inds = synth(data_loader, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_sampler)
+	else:
+		text_inds = synth(data_loader, net, syn_length, torch.device('cpu'))
 	text = data_loader.indsToString(text_inds)
 print()
 print("Synthesized text:")
