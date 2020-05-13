@@ -49,7 +49,10 @@ def loadNet(checkpoint, use_beam_search):
 	if module_id == 'lstm_char':
 		data_loader = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'])
-		synth = lstm_char_train.synthesize_characters
+		if use_beam_search:
+			synth = lstm_char_train.synthesize_characters_beam
+		else:
+			synth = lstm_char_train.synthesize_characters
 	elif module_id == 'rnn_char':
 		data_loader = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'), 0)
 		net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])

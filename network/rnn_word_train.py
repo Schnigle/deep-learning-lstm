@@ -136,5 +136,52 @@ def synthesize_characters(data, net, n, device):
 	return sentence
 
 def synthesize_characters_beam(data, net, n, device, k, sampler='Topk'):
-	print("Error: Beam search has not yet been implemented for this network.")
-	exit()
+
+	def synthesize_step(words, scores, hiddens):
+		# Takes words, scores and hiddens and expands them
+		n_in = len(words)
+		nextWords = [0]*data.K*n_in
+		nextScores = torch.empty(data.K*n_in)
+		nextHiddens = [0]*n_in
+		for i in range(n_in):
+			output, nextHiddens[i] = net(torch.tensor([words[i][-1]], dtype=torch.long, device=device), hiddens[i])
+			nextWords[i*data.K:(i+1)*data.K] = [words[i] + [x] for x in range(data.K)]
+			nextScores[i*data.K:(i+1)*data.K] = F.softmax(output, dim=1)[0]*scores[i]
+		return nextWords, nextScores, nextHiddens
+
+	hidden = net.initHidden(device)
+	net.zero_grad()
+
+	firstchar = data.word_to_ind['.']
+	words = [[firstchar]]
+	scores = torch.tensor([1])
+	hiddens = [hidden]
+	for i in range(n):
+		# print([data.indsToString(x) for x in words])
+		# print(scores)
+		words, scores, hiddens = synthesize_step(words, scores, hiddens)
+		scores = scores/torch.sum(scores) # normalize to prevent underflow
+
+		# reduces the expanded words, scores and hiddens, to always have k of them
+		if sampler == 'WeightedNoReplacement':
+			tmp_scores = scores[:]
+			idx = [0]*k
+			for i in range(k):
+				idx[i] = utility.randomSampleFromWeights(tmp_scores)
+				tmp_scores[idx[i]] = 0
+				tmp_scores = tmp_scores/torch.sum(tmp_scores)
+		elif sampler == 'Weighted':
+			idx = [utility.randomSampleFromWeights(scores) for x in range(k)]
+		elif sampler == 'Random':
+			idx = torch.randint(len(words), (1,k))[0].tolist()
+		elif sampler == 'Topk':
+			idx = torch.topk(scores, k=k, dim=0, largest=True)[1].tolist()
+
+		idx2 = [x//data.K for x in idx]
+		words = [words[x] for x in idx]
+		scores = scores[idx]
+		hiddens = [hiddens[x] for x in idx2]
+
+	idx = torch.argmax(scores)
+	word = words[idx][1:]
+	return word

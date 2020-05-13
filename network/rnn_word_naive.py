@@ -32,12 +32,15 @@ save_file_name = "rnn_word_naive_save.pt"
 n_hidden = 1000
 seq_length = 25
 syn_length = 500
-n_epochs = 100
+syn_beam_search = False
+beam_search_width = 30
+beam_search_sampler = 'Topk' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
+n_epochs = 1
 learning_rate = 0.01
 validation_factor = 0.2
 embedding_dim = 1000
 seed = random.randint(1, 10000)
-# seed = 999
+seed = 999
 use_cuda = True
 '''
     Note: Using the GPU is currently only beneficial for very large network
@@ -111,7 +114,10 @@ torch.save({
 '''
     Synthesize some text
 '''
-text_inds = rnn_word_train.synthesize_characters(data, net, syn_length, device)
+if syn_beam_search:
+    text_inds = rnn_word_train.synthesize_characters_beam(data, net, syn_length, device, beam_search_width, beam_search_sampler)
+else:
+    text_inds = rnn_word_train.synthesize_characters(data, net, syn_length, device)
 print()
 print("Synthesized text:")
 print("\t" + data.indsToString(text_inds))

@@ -29,7 +29,7 @@ import data
 import utility
 import sys
 
-syn_length = 500
+syn_length = 200
 syn_beam_search = True
 beam_search_width = 30
 beam_search_sampler = 'Weighted' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
