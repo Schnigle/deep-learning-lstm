@@ -24,10 +24,10 @@ import data
 import utility
 import sys
 
-syn_length = 200
+syn_length = 500
 syn_beam_search = True
-beam_search_width = 0 # 0 for no width limit
-beam_search_depth = 3
+beam_search_width = 30
+beam_search_sampler = 'WeightedNoReplacement' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
 seed = random.randint(1, 10000)
 # seed = 999
 
@@ -72,7 +72,7 @@ if module_id == 'rnn_bert':
 	text = synth(data, net, syn_length, torch.device('cpu'))
 else:
 	if syn_beam_search:
-		text_inds = synth(data, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_depth)
+		text_inds = synth(data, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_sampler)
 	else:
 		text_inds = synth(data, net, syn_length, torch.device('cpu'))
 	text = data.indsToString(text_inds)
