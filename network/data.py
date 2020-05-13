@@ -3,13 +3,14 @@
 '''
 
 import torch
+import re
 import math
 from transformers import BertModel, BertTokenizer
 import utility
 import torch.nn.functional as F
 
 class CharacterData():
-	def __init__(self, file_path, device):
+	def __init__(self, file_path, device, validation_factor):
 		# Raw text data
 		self.text_data = open(file_path, encoding="utf-8").read().strip()
 		# List of unique characters
@@ -24,7 +25,11 @@ class CharacterData():
 			self.char_to_ind[self.text_chars[i]] = i
 			self.ind_to_char[i] = self.text_chars[i]
 		self.device = device
-	
+		self.n_samples = len(self.text_data)
+		train_samples = round(len(self.text_data) * (1 - validation_factor))
+		self.train_data = self.text_data[0:train_samples]
+		self.val_data = self.text_data[train_samples + 1:]
+
 	# Convert a string to a one-hot [len(str), 1, K] tensor representation of all character classes in the string.
 	def stringToTensor(self, str):
 		tensor = torch.zeros(len(str), 1, self.K, device=self.device)
@@ -52,6 +57,60 @@ class CharacterData():
 			str += self.ind_to_char[i]
 		return str
 
+class WordData():
+	def __init__(self, file_path, device, validation_factor):
+		# Raw text data
+		self.device = device
+		self.text_data = open(file_path, encoding="utf-8").read().strip()
+		# Keep some special characters as "words"
+		self.special_chars = [".", ",", "?", "!", ":", ";", "\"", "(", ")", "\n", "[WS]", "[EQ]", "[SQ]"]
+		self.eos_chars = ".!?"
+		# Use special characters for start and end qoutes
+		self.text_data = self.text_data.replace("\" ", " [EQ] ").replace("\"\n", " [EQ] \n ").replace(" \"", " [SQ] ").replace("\n\"", " \n [SQ] ").replace("\"", " ")
+		for char in self.special_chars:
+			self.text_data = self.text_data.replace(char, " " + char + " ")
+		# Split on space and newline
+		self.text_data = re.sub("(\t| )+", " ", self.text_data)
+		self.word_data = self.text_data.split(" ")
+		# Partition into training and validation data
+		train_samples = round(len(self.word_data) * (1 - validation_factor))
+		self.train_data = self.word_data[0:train_samples]
+		self.val_data = self.word_data[train_samples + 1:]
+		self.words = sorted(list(set(self.word_data)))
+		self.K = len(self.words)
+		self.word_to_ind = dict()
+		self.ind_to_word = dict()
+		for i in range(self.K):
+			self.word_to_ind[self.words[i]] = i
+			self.ind_to_word[i] = self.words[i]
+		self.n_samples = len(self.word_data)
+
+	def isWord(self, str):
+		return not self.special_chars.__contains__(str)
+
+	def indsToString(self, inds):
+		str = ""
+		previous_token = "."
+		for i in inds:
+			token = self.ind_to_word[i]
+			if token == "[EQ]":
+				str += "\" "
+			elif token == "[SQ]":
+				str += " \""
+			elif self.isWord(token):
+				if self.isWord(previous_token) or self.eos_chars.__contains__(previous_token) or previous_token == "," or previous_token == ";" or previous_token == ":":
+					str += " "
+				str += token
+			else:
+				if token == "(":
+					str += " ("
+				elif token == ")":
+					str += ") "
+				else:
+					str += token
+			previous_token = token
+		return str
+		
 class VecData():
 	def __init__(self, file_path, device):
 		# Raw text data

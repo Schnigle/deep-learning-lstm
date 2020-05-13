@@ -92,3 +92,7 @@ def synthesize_words(data, net, n, device):
 		prev_vec = vecs[i].unsqueeze(0)
 	words = data.tokenizer.decode(ids)
 	return words
+
+def synthesize_characters_beam(data, net, n, device, k, sampler='Topk'):
+	print("Error: Beam search has not yet been implemented for this network.")
+	exit()

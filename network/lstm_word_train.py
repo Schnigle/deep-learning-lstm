@@ -32,11 +32,11 @@ def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, 
 	target_seq_tensor.transpose_(0, 1)
 	output.transpose_(0, 1)
 	output.transpose_(1, 2)
-	# TODO: Multiply with sequence length to better match sequential approach?
 	loss = criterion(output, target_seq_tensor)
-
-	loss.backward()
-	optimizer.step()
+	if net.training:
+		loss.backward()
+		optimizer.step()
+		
 
 	return output, loss.item(), (hidden.detach(), cell.detach())
 
@@ -52,29 +52,34 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 	expected_number_of_iterations = (len(data.train_data) / (seq_length * batch_size)) * n_epochs    # (approximative)
 
 	start_time = time.time()
-	
 	state_dict_save = None
-	last_validation_loss = 0
 
+	last_validation_loss = 0
 	# One epoch = one full run through the training data (such as goblet_book.txt)
 	for epoch in range(n_epochs):
 		if state_dict_save != None:
 			net.load_state_dict(state_dict_save)
+		net.train()
 		i=0
 		hidden = net.initHidden(batch_size, device)
 		# One iteration = one sequence of text data (such as 25 characters)
-		while i < (len(data.train_data) - seq_length * batch_size):
+		while i + batch_size * seq_length + 1 < len(data.train_data):
 			# prepare data batches
-			X_batch = torch.zeros(seq_length, batch_size, data.K).to(device)
-			Y_batch = torch.zeros(seq_length, batch_size, dtype=torch.long).to(device)
+			X_batch = torch.zeros(batch_size, seq_length, dtype=torch.long).to(device)
+			Y_batch = torch.zeros(batch_size, seq_length, dtype=torch.long).to(device)
 			for j in range(batch_size):
-				X_chars = data.train_data[i:i+seq_length]
-				Y_chars = data.train_data[i+1:i+seq_length+1]
-				X = data.stringToTensor(X_chars)
-				Y = data.stringToTensorNLLLabel(Y_chars)
-				X_batch[:, j, :] = X.squeeze(1)
-				Y_batch[:, j] = Y
+				X_words = data.train_data[i:i+seq_length]
+				Y_words = data.train_data[i+1:i+seq_length+1]
+				X = torch.zeros(seq_length, dtype=torch.long)
+				Y = torch.zeros(seq_length, dtype=torch.long)
+				for k in range(seq_length):
+					X[k] = data.word_to_ind[X_words[k]]
+					Y[k] = data.word_to_ind[Y_words[k]]
+				X_batch[j, :] = X
+				Y_batch[j, :] = Y
 				i += seq_length
+			X_batch.transpose_(0, 1)
+			Y_batch.transpose_(0, 1)
 			output, loss, hidden = train_batch(net, criterion, optimizer, X_batch, Y_batch, hidden)
 			if current_iteration == 0:
 				smooth_loss = loss
@@ -86,6 +91,7 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 			print("\t" + str(percent_done) + "% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss) + ". Last validation loss: " + str("{:0.2f}").format(last_validation_loss) + "\t\t\t", end="\r")
 			loss_vec.append(loss)
 			smooth_loss_vec.append(smooth_loss)
+		
 		# Dynamic evaluation - let evaluation update weights and revert to the previous weights when training
 		state_dict_save = copy.deepcopy(net.state_dict())
 		i=0
@@ -94,16 +100,21 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 		# One iteration = one sequence of text data (such as 25 characters)
 		while i + batch_size * seq_length + 1 < len(data.val_data):
 			# prepare data batches
-			X_batch = torch.zeros(seq_length, batch_size, data.K).to(device)
-			Y_batch = torch.zeros(seq_length, batch_size, dtype=torch.long).to(device)
+			X_batch = torch.zeros(batch_size, seq_length, dtype=torch.long).to(device)
+			Y_batch = torch.zeros(batch_size, seq_length, dtype=torch.long).to(device)
 			for j in range(batch_size):
-				X_chars = data.val_data[i:i+seq_length]
-				Y_chars = data.val_data[i+1:i+seq_length+1]
-				X = data.stringToTensor(X_chars)
-				Y = data.stringToTensorNLLLabel(Y_chars)
-				X_batch[:, j, :] = X.squeeze(1)
-				Y_batch[:, j] = Y
+				X_words = data.val_data[i:i+seq_length]
+				Y_words = data.val_data[i+1:i+seq_length+1]
+				X = torch.zeros(seq_length, dtype=torch.long)
+				Y = torch.zeros(seq_length, dtype=torch.long)
+				for k in range(seq_length):
+					X[k] = data.word_to_ind[X_words[k]]
+					Y[k] = data.word_to_ind[Y_words[k]]
+				X_batch[j, :] = X
+				Y_batch[j, :] = Y
 				i += seq_length
+			X_batch.transpose_(0, 1)
+			Y_batch.transpose_(0, 1)
 			output, loss, hidden = train_batch(net, criterion, optimizer, X_batch, Y_batch, hidden)
 			if first_val_batch:
 				last_validation_loss = loss
@@ -112,7 +123,7 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 				last_validation_loss = last_validation_loss * (1 - smooth_interpolation_rate * 2) + loss * smooth_interpolation_rate * 2
 			val_loss_vec.append(loss)
 			print("\t" + str(percent_done) + "% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss) + ". Last validation loss: " + str("{:0.2f}").format(last_validation_loss) + "\t\t\t", end="\r")
-			
+				
 	total_time = time.time() - start_time
 	print("\t100% done. Smooth loss: " +  str("{:.2f}").format(smooth_loss) + ". Last validation loss: " + str("{:0.2f}").format(last_validation_loss) + "\t\t\t", end="\r")
 	print()
@@ -124,8 +135,8 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 def synthesize_characters(data, net, n, device):
 	hidden = net.initHidden(1, device)
 	net.zero_grad()
-	prev_char = data.toOneHot(data.char_to_ind['.'])
-	word = []
+	prev_char = torch.tensor([data.word_to_ind["."]], dtype=torch.long, device=device)
+	sentence = []
 	for i in range(n):
 		'''
 			Select the next character based on the probability distribution.
@@ -138,10 +149,10 @@ def synthesize_characters(data, net, n, device):
 		# Convert output to probability weights. 
 		output = F.softmax(output, dim=1)
 		char_index = utility.randomSampleFromWeights(output[0])
-		word.append(char_index)
-		prev_char = data.toOneHot(char_index)
-	return word
+		sentence.append(char_index)
+		prev_char = torch.tensor([char_index], dtype=torch.long, device=device)
+	return sentence
 
 def synthesize_characters_beam(data, net, n, device, k, sampler='Topk'):
-	print("Beam search has not yet been implemented for this network.")
+	print("Error: Beam search has not yet been implemented for this network.")
 	exit()

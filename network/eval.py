@@ -17,9 +17,14 @@ import time
 import rnn_char_net
 import rnn_bert_net
 import rnn_char_train
+import rnn_word_net
+import rnn_word_net_naive
+import rnn_word_train
 import rnn_bert_train
 import lstm_char_net
 import lstm_char_train
+import lstm_word_net
+import lstm_word_train
 import data
 import utility
 import sys
@@ -44,42 +49,28 @@ torch.manual_seed(seed)
 random.seed(seed)
 
 checkpoint = torch.load(file_path)
-module_id = checkpoint['module_id']
-if module_id == 'lstm_char':
-	net = lstm_char_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'])
-	synth = lstm_char_train.synthesize_characters
-elif module_id == 'rnn_char':
-	net = rnn_char_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
-	if syn_beam_search:
-		synth = rnn_char_train.synthesize_characters_beam
-	else:
-		synth = rnn_char_train.synthesize_characters
-elif module_id == 'rnn_bert':
-	net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
-	synth = rnn_bert_train.synthesize_words
+net, data_loader, synth = utility.loadNet(checkpoint, syn_beam_search)
 net.load_state_dict(checkpoint['model_state_dict'])
 loss_vec = checkpoint['loss_vec']
 smooth_loss_vec = checkpoint['smooth_loss_vec']
-if module_id == 'rnn_bert':
-	data = data.VecData(checkpoint['input_file_name'], torch.device('cpu'))
-else:
-	data = data.CharacterData(checkpoint['input_file_name'], torch.device('cpu'))
 
 '''
     Synthesize some text
 '''
-if module_id == 'rnn_bert':
-	text = synth(data, net, syn_length, torch.device('cpu'))
+if checkpoint['module_id'] == 'rnn_bert':
+	text = synth(data_loader, net, syn_length, torch.device('cpu'))
 else:
 	if syn_beam_search:
-		text_inds = synth(data, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_sampler)
+		text_inds = synth(data_loader, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_sampler)
 	else:
-		text_inds = synth(data, net, syn_length, torch.device('cpu'))
-	text = data.indsToString(text_inds)
+		text_inds = synth(data_loader, net, syn_length, torch.device('cpu'))
+	text = data_loader.indsToString(text_inds)
 print()
 print("Synthesized text:")
 print("\t" + text)
 print()
+print(checkpoint['config_text'])
+print(flush=True)
 
 '''
     Plot loss
@@ -87,14 +78,25 @@ print()
     TODO: Instead of plotting "unsmooth" loss, do multiple runs 
     and plot average loss and standard deviation between runs.
 '''
-plt.plot(loss_vec, 'lightblue')
 plt.plot(smooth_loss_vec, 'blue')
-plt.legend(['Iteration loss', 'Smooth loss'])
+if 'val_loss_vec' in checkpoint:
+	val_loss_vec = checkpoint['val_loss_vec']
+	smooth_val_loss_vec = []
+	smooth_val = val_loss_vec[0]
+	interpolation_rate = 0.01
+	val_scale_factor = round(len(loss_vec) / len(val_loss_vec))
+	for val in val_loss_vec:
+		smooth_val = smooth_val * (1 - interpolation_rate) + val * interpolation_rate
+		smooth_val_loss_vec.append(smooth_val)
+	iterations_per_epoch = round(data_loader.n_samples / checkpoint['batch_size'] / checkpoint['seq_length'])
+	plt.plot(range(iterations_per_epoch, len(smooth_val_loss_vec) * val_scale_factor + iterations_per_epoch, val_scale_factor), smooth_val_loss_vec, 'orange')
+	
+plt.legend(['Training loss', 'Validation loss'])
 title = "Loss evolution of " + checkpoint['config_text']
 plt.title(title)
-plt.xlabel("Training iteration")
-plt.ylabel("Training loss")
+plt.xlabel("Iteration")
+plt.ylabel("Loss")
 plt.xlim(0, len(smooth_loss_vec))
 # Note: y-max is quite arbitrary and depends on the loss metric and data
-plt.ylim(0, 150)
+plt.ylim(0, 20)
 plt.show()
