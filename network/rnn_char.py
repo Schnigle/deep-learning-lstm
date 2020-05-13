@@ -26,14 +26,14 @@ import utility
 '''
     Network and synthesis parameters
 '''
-input_file_name = "data/speech.txt"
+input_file_name = "data/speech_long.txt"
 save_file_name = "rnn_char_save.pt"
 n_hidden = 50
 seq_length = 25
-syn_length = 200
-syn_beam_search = True
-beam_search_width = 6
-beam_search_sampler = 'WeightedNoReplacement' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
+syn_length = 500
+syn_beam_search = False
+beam_search_width = 30
+beam_search_sampler = 'Topk' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
 n_epochs = 60
 learning_rate = 0.1
 validation_factor = 0.2

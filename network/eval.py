@@ -32,9 +32,9 @@ import sys
 syn_length = 500
 syn_beam_search = True
 beam_search_width = 30
-beam_search_sampler = 'WeightedNoReplacement' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
+beam_search_sampler = 'Weighted' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
 seed = random.randint(1, 10000)
-# seed = 999
+seed = 999
 
 args = sys.argv
 if len(args) < 2:
