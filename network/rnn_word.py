@@ -103,6 +103,7 @@ torch.save({
     'input_file_name' : input_file_name,
     'config_text' : config_text,
     'module_id' : module_id,
+    'seed' : seed,
 },  save_folder + "/" + save_file_name)
 
 '''
