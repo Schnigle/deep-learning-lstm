@@ -72,6 +72,7 @@ print(flush=True)
     TODO: Instead of plotting "unsmooth" loss, do multiple runs 
     and plot average loss and standard deviation between runs.
 '''
+plt.plot(smooth_loss_vec, 'blue')
 if 'val_loss_vec' in checkpoint:
 	val_loss_vec = checkpoint['val_loss_vec']
 	smooth_val_loss_vec = []
@@ -82,7 +83,6 @@ if 'val_loss_vec' in checkpoint:
 		smooth_val = smooth_val * (1 - interpolation_rate) + val * interpolation_rate
 		smooth_val_loss_vec.append(smooth_val)
 	iterations_per_epoch = round(data_loader.n_samples / checkpoint['batch_size'] / checkpoint['seq_length'])
-	plt.plot(smooth_loss_vec, 'blue')
 	plt.plot(range(iterations_per_epoch, len(smooth_val_loss_vec) * val_scale_factor + iterations_per_epoch, val_scale_factor), smooth_val_loss_vec, 'orange')
 	
 plt.legend(['Training loss', 'Validation loss'])
@@ -92,5 +92,5 @@ plt.xlabel("Iteration")
 plt.ylabel("Loss")
 plt.xlim(0, len(smooth_loss_vec))
 # Note: y-max is quite arbitrary and depends on the loss metric and data
-plt.ylim(0, 10)
+plt.ylim(0, 20)
 plt.show()
