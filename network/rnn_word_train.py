@@ -58,14 +58,16 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 
 	# One epoch = one full run through the training data (such as goblet_book.txt)
 	for epoch in range(n_epochs):
+		if state_dict_save != None:
+			net.load_state_dict(state_dict_save)
 		i=0
 		hidden = net.initHidden(device)
 		# One iteration = one sequence of text data (such as 25 characters)
 		while i < (len(data.train_data) - seq_length):
 			X_words = data.train_data[i:i+seq_length]
 			Y_words = data.train_data[i+1:i+seq_length+1]
-			X = torch.zeros(seq_length, dtype=torch.long)
-			Y = torch.zeros(seq_length, dtype=torch.long)
+			X = torch.zeros(seq_length, dtype=torch.long, device=device)
+			Y = torch.zeros(seq_length, dtype=torch.long, device=device)
 			for k in range(seq_length):
 				X[k] = data.word_to_ind[X_words[k]]
 				Y[k] = data.word_to_ind[Y_words[k]]
@@ -90,8 +92,8 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 		while i + seq_length + 1 < len(data.val_data):
 			X_words = data.val_data[i:i+seq_length]
 			Y_words = data.val_data[i+1:i+seq_length+1]
-			X = torch.zeros(seq_length, dtype=torch.long)
-			Y = torch.zeros(seq_length, dtype=torch.long)
+			X = torch.zeros(seq_length, dtype=torch.long, device=device)
+			Y = torch.zeros(seq_length, dtype=torch.long, device=device)
 			for k in range(seq_length):
 				X[k] = data.word_to_ind[X_words[k]]
 				Y[k] = data.word_to_ind[Y_words[k]]

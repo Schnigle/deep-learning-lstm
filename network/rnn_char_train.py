@@ -57,6 +57,8 @@ def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, l
 
 	# One epoch = one full run through the training data (such as goblet_book.txt)
 	for epoch in range(n_epochs):
+		if state_dict_save != None:
+			net.load_state_dict(state_dict_save)
 		i=0
 		hidden = net.initHidden(device)
 		# One iteration = one sequence of text data (such as 25 characters)

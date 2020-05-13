@@ -28,7 +28,7 @@ import utility
     Network and synthesis parameters
 '''
 input_file_name = "data/goblet_short.txt"
-save_file_name = "rnn_word_save_naive.pt"
+save_file_name = "rnn_word_naive_save.pt"
 n_hidden = 1000
 seq_length = 25
 syn_length = 500
@@ -38,7 +38,7 @@ validation_factor = 0.2
 embedding_dim = 1000
 seed = random.randint(1, 10000)
 # seed = 999
-use_cuda = False
+use_cuda = True
 '''
     Note: Using the GPU is currently only beneficial for very large network
     sizes since the batches are processed sequentially. For smaller net_rnn
@@ -69,6 +69,7 @@ print("\t" + input_file_name)
 print()
 print("Parameters: ")
 print("\tHidden nodes M: ", n_hidden)
+print("\tEmbedding size: ", embedding_dim)
 print("\tSequence length: ", seq_length)
 print("\tLearning rate: ", learning_rate)
 print("\tNumber of epochs: ", n_epochs)
