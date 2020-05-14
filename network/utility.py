@@ -90,3 +90,11 @@ def loadNet(checkpoint, use_beam_search):
 		else:
 			synth = rnn_bert_train.synthesize_characters
 	return net, data_loader, synth
+
+def smoothed(vec, interpolation_rate):
+	smooth_val = vec[0]
+	smooth_vec = []
+	for val in vec:
+		smooth_val = smooth_val * (1 - interpolation_rate) + val * interpolation_rate
+		smooth_vec.append(smooth_val)
+	return smooth_vec
