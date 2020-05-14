@@ -8,6 +8,8 @@ import math
 from transformers import BertModel, BertTokenizer
 import utility
 import torch.nn.functional as F
+import copy
+from gensim.models import Word2Vec
 
 class CharacterData():
 	def __init__(self, file_path, device, validation_factor):
@@ -72,6 +74,8 @@ class WordData():
 		# Split on space and newline
 		self.text_data = re.sub("(\t| )+", " ", self.text_data)
 		self.word_data = self.text_data.split(" ")
+		# Remove empty tokens
+		self.word_data = [a for a in self.word_data if a != ""]
 		# Partition into training and validation data
 		train_samples = round(len(self.word_data) * (1 - validation_factor))
 		self.train_data = self.word_data[0:train_samples]
@@ -166,3 +170,54 @@ class VecData():
 		vec = self.vec_data[idx, :, :]
 		id = self.ids[0, idx]
 		return vec, id
+
+class W2VData():
+	def __init__(self, text_path, w2v_path, device, validation_factor):
+		self.w2v_model = Word2Vec.load(w2v_path)
+		# Raw text data
+		self.device = device
+		self.word_data = WordData(text_path, device, validation_factor)
+		self.text_data = self.word_data.text_data
+		self.special_chars = self.word_data.special_chars
+		self.eos_chars = self.word_data.eos_chars
+		self.text_data = self.word_data.text_data
+		self.word_data_text = self.word_data.word_data
+		self.vec_data = [self.w2v_model.wv[w] for w in self.word_data_text]
+		# Partition into training and validation data
+		train_samples = round(len(self.vec_data) * (1 - validation_factor))
+		self.train_data = self.vec_data[0:train_samples]
+		self.val_data = self.vec_data[train_samples + 1:]
+		# self.words = sorted(list(set(self.word_data_text)))
+		self.K = self.w2v_model.vector_size
+		# self.word_to_ind = dict()
+		# self.ind_to_word = dict()
+		# for i in range(self.K):
+		# 	self.word_to_ind[self.words[i]] = i
+		# 	self.ind_to_word[i] = self.words[i]
+		self.n_samples = len(self.vec_data)
+
+	def isWord(self, str):
+		return not self.special_chars.__contains__(str)
+
+	def indsToString(self, inds):
+		str = ""
+		previous_token = "."
+		for i in inds:
+			token, weight = self.w2v_model.wv.most_similar([i])[0]
+			if token == "[EQ]":
+				str += "\" "
+			elif token == "[SQ]":
+				str += " \""
+			elif self.isWord(token):
+				if self.isWord(previous_token) or self.eos_chars.__contains__(previous_token) or previous_token == "," or previous_token == ";" or previous_token == ":":
+					str += " "
+				str += token
+			else:
+				if token == "(":
+					str += " ("
+				elif token == ")":
+					str += ") "
+				else:
+					str += token
+			previous_token = token
+		return str
