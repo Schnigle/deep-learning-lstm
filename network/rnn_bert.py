@@ -26,15 +26,15 @@ import utility
 '''
     Network and synthesis parameters
 '''
-input_file_name = "data/speech_long.txt"
-save_file_name = "rnn_bert_save.pt"
-n_hidden = 200
+input_file_name = "data/goblet_book.txt"
+save_file_name = "rnn_bert_save_400.pt"
+n_hidden = 400
 seq_length = 25
 syn_length = 500
 syn_beam_search = False
 beam_search_width = 30
 beam_search_sampler = 'Topk' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
-n_epochs = 100
+n_epochs = 3
 learning_rate = 0.05
 validation_factor = 0.1
 seed = random.randint(1, 10000)

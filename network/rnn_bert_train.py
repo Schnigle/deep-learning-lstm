@@ -39,7 +39,7 @@ def train_batch(net, criterion, optimizer, input_seq_tensor, target_seq_tensor, 
 	loss.backward()
 	optimizer.step()
 
-	return output, loss.item(), hidden.detach()
+	return output, loss.item() / input_seq_tensor.size(0), hidden.detach()
 
 def train_net(net, criterion, optimizer, data, n_hidden, seq_length, n_epochs, learning_rate, device):
 	print("Training progress: ")
