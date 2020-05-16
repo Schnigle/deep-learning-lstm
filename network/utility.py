@@ -25,6 +25,8 @@ import rnn_word_net_naive
 import rnn_word_train
 import rnn_bert_net
 import rnn_bert_train
+import lstm_bert_net
+import lstm_bert_train
 import lstm_char_net
 import lstm_char_train
 import lstm_word_net
@@ -83,7 +85,17 @@ def loadNet(checkpoint, use_beam_search):
 		else:
 			synth = rnn_word_train.synthesize_characters
 	elif module_id == 'rnn_bert':
-		net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
-		data_loader = data.VecData(checkpoint['input_file_name'], torch.device('cpu'))
-		synth = rnn_bert_train.synthesize_words
+		data_loader = data.VecData(checkpoint['input_file_name'], torch.device('cpu'), 0)
+		net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['embeddings'].to('cpu'))
+		if use_beam_search:
+			synth = rnn_word_train.synthesize_characters_beam
+		else:
+			synth = rnn_word_train.synthesize_characters
+	elif module_id == 'lstm_bert':
+		data_loader = data.VecData(checkpoint['input_file_name'], torch.device('cpu'), 0)
+		net = lstm_bert_net.RNN_LSTM(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'], checkpoint['n_layers'], checkpoint['embeddings'].to('cpu'))
+		if use_beam_search:
+			synth = lstm_bert_train.synthesize_characters_beam
+		else:
+			synth = lstm_bert_train.synthesize_characters
 	return net, data_loader, synth

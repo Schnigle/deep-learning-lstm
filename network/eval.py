@@ -30,8 +30,8 @@ import utility
 import sys
 
 syn_length = 200
-syn_beam_search = False
-beam_search_width = 30
+syn_beam_search = True
+beam_search_width = 3
 beam_search_sampler = 'Weighted' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
 seed = random.randint(1, 10000)
 seed = 999
@@ -57,14 +57,11 @@ smooth_loss_vec = checkpoint['smooth_loss_vec']
 '''
     Synthesize some text
 '''
-if checkpoint['module_id'] == 'rnn_bert':
-	text = synth(data_loader, net, syn_length, torch.device('cpu'))
+if syn_beam_search:
+	text_inds = synth(data_loader, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_sampler)
 else:
-	if syn_beam_search:
-		text_inds = synth(data_loader, net, syn_length, torch.device('cpu'), beam_search_width, beam_search_sampler)
-	else:
-		text_inds = synth(data_loader, net, syn_length, torch.device('cpu'))
-	text = data_loader.indsToString(text_inds)
+	text_inds = synth(data_loader, net, syn_length, torch.device('cpu'))
+text = data_loader.indsToString(text_inds)
 print()
 print("Synthesized text:")
 print("\t" + text)
@@ -98,5 +95,5 @@ plt.xlabel("Iteration")
 plt.ylabel("Loss")
 plt.xlim(0, len(smooth_loss_vec))
 # Note: y-max is quite arbitrary and depends on the loss metric and data
-plt.ylim(0, 20)
+plt.ylim(0)
 plt.show()
