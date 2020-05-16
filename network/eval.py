@@ -30,7 +30,7 @@ import utility
 import sys
 
 syn_length = 200
-syn_beam_search = True
+syn_beam_search = False
 beam_search_width = 30
 beam_search_sampler = 'Weighted' # 'WeightedNoReplacement', 'Weighted', 'Random' and 'Topk'
 seed = random.randint(1, 10000)

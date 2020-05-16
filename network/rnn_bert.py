@@ -26,13 +26,13 @@ import utility
 '''
     Network and synthesis parameters
 '''
-input_file_name = "data/goblet_short.txt"
-save_file_name = "rnn_bert_save.pt"
-n_hidden = 500
+input_file_name = "data/goblet_book.txt"
+save_file_name = "rnn_bert_save_200.pt"
+n_hidden = 200
 seq_length = 25
 syn_length = 500
-n_epochs = 1
-learning_rate = 0.1
+n_epochs = 6
+learning_rate = 0.05
 seed = random.randint(1, 10000)
 # seed = 999
 use_cuda = False

@@ -8,6 +8,7 @@ import math
 from transformers import BertModel, BertTokenizer
 import utility
 import torch.nn.functional as F
+import os
 
 class CharacterData():
 	def __init__(self, file_path, device, validation_factor):
@@ -123,7 +124,7 @@ class VecData():
 		self.ids = self.ids_list2ids(self.ids_list)
 		self.tokens = self.ids2tokens(self.ids)
 		# Word embeddings
-		self.vec_data = self.ids_list2vecs(self.ids_list)
+		self.vec_data = self.ids_list2vecs(self.ids_list, file_path)
 		# K: Number of classes (dimensions of word embedding)
 		self.K = self.vec_data.shape[2]
 
@@ -145,18 +146,23 @@ class VecData():
 		tokens = self.tokenizer.convert_ids_to_tokens(ids[0, :])
 		return tokens
 
-	def ids_list2vecs(self, ids_list):
-		vecs = torch.empty(0, 1, 768)
-		n = len(ids_list) 
-		for i, ids in enumerate(ids_list):
-			print("\t {} % done.".format(round(i/n*100)), end="\r")
-			with torch.no_grad():
-				output = self.model(ids)
-				hidden_states = output[2]
-			vecs_batch = F.normalize(torch.stack(hidden_states[:4]).sum(0), dim=2).transpose(0, 1)
-			length = vecs_batch.size(0)
-			vecs_batch = vecs_batch.narrow(0, 1, length - 2)
-			vecs = torch.cat([vecs, vecs_batch], dim=0)
+	def ids_list2vecs(self, ids_list, file_path):
+		name = file_path[:-4] + "_bert_embedding.pt"
+		if os.path.isfile(name):
+			vecs = torch.load(name)
+		else:
+			vecs = torch.empty(0, 1, 768)
+			n = len(ids_list) 
+			for i, ids in enumerate(ids_list):
+				print("\t {} % done.".format(round(i/n*100)), end="\r")
+				with torch.no_grad():
+					output = self.model(ids)
+					hidden_states = output[2]
+				vecs_batch = F.normalize(torch.stack(hidden_states[:4]).sum(0), dim=2).transpose(0, 1)
+				length = vecs_batch.size(0)
+				vecs_batch = vecs_batch.narrow(0, 1, length - 2)
+				vecs = torch.cat([vecs, vecs_batch], dim=0)
+			torch.save(vecs, name)
 		return vecs
 	
 	def veclike2vec(self, vec):

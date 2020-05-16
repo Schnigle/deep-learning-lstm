@@ -85,8 +85,5 @@ def loadNet(checkpoint, use_beam_search):
 	elif module_id == 'rnn_bert':
 		net = rnn_bert_net.RNN(checkpoint['K'], checkpoint['n_hidden'], checkpoint['K'])
 		data_loader = data.VecData(checkpoint['input_file_name'], torch.device('cpu'))
-		if use_beam_search:
-			synth = rnn_bert_train.synthesize_characters_beam
-		else:
-			synth = rnn_bert_train.synthesize_characters
+		synth = rnn_bert_train.synthesize_words
 	return net, data_loader, synth
